@@ -1,7 +1,6 @@
 from pathlib import Path
 from uuid import uuid4
 
-
 from flask import Blueprint, jsonify, request
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
@@ -16,15 +15,21 @@ from app.services.database import (
     reorder_media_items,
     update_media_item,
 )
+from app.services.slide_generator import (
+    SlideGenerationError,
+    create_sign_slide,
+)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+
 ALLOWED_IMAGE_EXTENSIONS = {
-	".jpg",
-	".jpeg",
-	".png",
-	".gif",
-	".webp",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
 }
+
 
 def serialize_media(record):
     """Convert a SQLite row into JSON-safe media data."""
@@ -38,7 +43,6 @@ def serialize_media(record):
         "enabled": bool(record["enabled"]),
         "created_at": record["created_at"],
     }
-
 
 
 @api_bp.route("/media/reorder", methods=["PUT"])
@@ -82,6 +86,7 @@ def media_reorder():
         for record in records
     ])
 
+
 @api_bp.route("/slides", methods=["GET"])
 def slides():
     records = get_enabled_slides()
@@ -100,6 +105,118 @@ def slides():
     return jsonify(playlist)
 
 
+@api_bp.route("/slides/create", methods=["POST"])
+def create_slide():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "Request body must contain JSON"
+        }), 400
+
+    title = str(data.get("title", "")).strip()
+    body = str(data.get("body", "")).strip()
+    footer = str(data.get("footer", "")).strip()
+
+    background_color = str(
+        data.get("background_color", "#153A5B")
+    ).strip()
+
+    text_color = str(
+        data.get("text_color", "#FFFFFF")
+    ).strip()
+
+    accent_color = str(
+        data.get("accent_color", "#75B9E6")
+    ).strip()
+
+    alignment = str(
+        data.get("alignment", "center")
+    ).strip().lower()
+
+    duration_value = data.get("duration", 10)
+
+    if not title and not body:
+        return jsonify({
+            "error": "A title or body message is required"
+        }), 400
+
+    if len(title) > 250:
+        return jsonify({
+            "error": "Title cannot exceed 250 characters"
+        }), 400
+
+    if len(body) > 2000:
+        return jsonify({
+            "error": "Body cannot exceed 2000 characters"
+        }), 400
+
+    if len(footer) > 500:
+        return jsonify({
+            "error": "Footer cannot exceed 500 characters"
+        }), 400
+
+    if alignment not in {"left", "center", "right"}:
+        return jsonify({
+            "error": "Alignment must be left, center, or right"
+        }), 400
+
+    try:
+        duration = int(duration_value)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Duration must be an integer"
+        }), 400
+
+    if duration < 1 or duration > 3600:
+        return jsonify({
+            "error": "Duration must be between 1 and 3600 seconds"
+        }), 400
+
+    generated_path = None
+
+    try:
+        generated_path = create_sign_slide(
+            output_directory=MEDIA_DIR,
+            title=title,
+            body=body,
+            footer=footer,
+            background_color=background_color,
+            text_color=text_color,
+            accent_color=accent_color,
+            alignment=alignment,
+        )
+
+        record = create_media_item(
+            filename=generated_path.name,
+            media_type="image",
+            duration=duration,
+            enabled=True,
+        )
+
+        return jsonify({
+            "message": "Slide created successfully",
+            "media": serialize_media(record),
+        }), 201
+
+    except SlideGenerationError as error:
+        if generated_path is not None:
+            generated_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except Exception as error:
+        if generated_path is not None:
+            generated_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The slide could not be created",
+            "details": str(error),
+        }), 500
+
+
 @api_bp.route("/media", methods=["GET"])
 def media_list():
     records = get_all_media()
@@ -108,6 +225,8 @@ def media_list():
         serialize_media(record)
         for record in records
     ])
+
+
 @api_bp.route("/media", methods=["POST"])
 def media_upload():
     if "file" not in request.files:
@@ -135,12 +254,15 @@ def media_upload():
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         return jsonify({
             "error": "Unsupported file type",
-            "allowed_extensions": sorted(ALLOWED_IMAGE_EXTENSIONS),
+            "allowed_extensions": sorted(
+                ALLOWED_IMAGE_EXTENSIONS
+            ),
         }), 400
 
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
     unique_suffix = uuid4().hex[:8]
+
     filename = (
         f"{original_path.stem}-{unique_suffix}{extension}"
     )
@@ -220,13 +342,25 @@ def media_update(media_id):
             "error": "Request body must contain JSON"
         }), 400
 
-    duration = data.get("duration", record["duration"])
-    sort_order = data.get("sort_order", record["sort_order"])
-    enabled = data.get("enabled", bool(record["enabled"]))
+    duration = data.get(
+        "duration",
+        record["duration"],
+    )
+
+    sort_order = data.get(
+        "sort_order",
+        record["sort_order"],
+    )
+
+    enabled = data.get(
+        "enabled",
+        bool(record["enabled"]),
+    )
 
     try:
         duration = int(duration)
         sort_order = int(sort_order)
+
     except (TypeError, ValueError):
         return jsonify({
             "error": "Duration and sort_order must be integers"
@@ -283,9 +417,13 @@ def media_delete(media_id):
         if media_path.is_file():
             media_path.unlink()
             file_deleted = True
+
     except OSError as error:
         return jsonify({
-            "error": "Database record deleted, but file removal failed",
+            "error": (
+                "Database record deleted, "
+                "but file removal failed"
+            ),
             "details": str(error),
             "id": media_id,
             "filename": record["filename"],

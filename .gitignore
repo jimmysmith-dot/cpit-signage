@@ -43,3 +43,8 @@ dist/
 
 # Flask
 instance/
+
+
+# Runtime media
+media/*
+!media/.gitkeep
