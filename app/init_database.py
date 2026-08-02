@@ -1,4 +1,8 @@
-from database import DATABASE_PATH, import_existing_media, get_connection
+from app.services.database import (
+    DATABASE_PATH,
+    get_connection,
+    import_existing_media,
+)
 
 
 def main():

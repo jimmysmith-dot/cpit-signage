@@ -147,7 +147,7 @@
             </div>
         {% endif %}
 
-        <form method="post" action="{{ url_for('admin_save') }}">
+        <form method="post" action="{{ url_for('admin.save') }}">
             <div class="panel">
                 {% if media_items %}
                     <table>
@@ -168,7 +168,7 @@
                                         <img
                                             class="thumbnail"
                                             src="{{ url_for(
-                                                'media',
+                                                'player.media',
                                                 filename=item['filename']
                                             ) }}"
                                             alt=""
@@ -228,7 +228,7 @@
 
                 <a
                     class="button secondary"
-                    href="{{ url_for('index') }}"
+                    href="{{ url_for('player.index') }}"
                     target="_blank"
                 >
                     Open Player
