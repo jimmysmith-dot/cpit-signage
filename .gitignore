@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+
+# Logs
+logs/
+*.log
+
+# SQLite Databases
+*.db
+*.sqlite3
+
+# IDE Files
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Temporary Files
+*.tmp
+*.swp
+*~
+
+# Python Environment
+.env
+
+# Local Configuration
+config/local.json
+
+# Media Cache
+cache/
+
+# Python Build Files
+build/
+dist/
+*.egg-info/
+
+# Flask
+instance/
