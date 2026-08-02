@@ -1,8 +1,14 @@
-from flask import Flask, render_template, jsonify
 from pathlib import Path
 
+from flask import Flask, jsonify, render_template, send_from_directory
+
+from database import (
+    MEDIA_DIR,
+    get_enabled_slides,
+    import_existing_media,
+)
+
 BASE_DIR = Path("/opt/cpit-signage")
-MEDIA_DIR = BASE_DIR / "media"
 
 app = Flask(
     __name__,
@@ -10,28 +16,35 @@ app = Flask(
     static_folder=str(BASE_DIR / "app/static"),
 )
 
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
 @app.route("/api/slides")
 def slides():
-    images = []
+    records = get_enabled_slides()
 
-    for ext in ("*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp"):
-        for file in sorted(MEDIA_DIR.glob(ext)):
-            images.append({
-                "type": "image",
-                "url": f"/media/{file.name}",
-                "duration": 10
-            })
+    playlist = [
+        {
+            "id": record["id"],
+            "type": record["media_type"],
+            "url": f"/media/{record['filename']}",
+            "duration": record["duration"],
+            "sort_order": record["sort_order"],
+        }
+        for record in records
+    ]
 
-    return jsonify(images)
+    return jsonify(playlist)
+
 
 @app.route("/media/<path:filename>")
 def media(filename):
-    from flask import send_from_directory
     return send_from_directory(MEDIA_DIR, filename)
 
+
 if __name__ == "__main__":
+    import_existing_media()
     app.run(host="127.0.0.1", port=5000)
