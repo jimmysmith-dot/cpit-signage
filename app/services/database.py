@@ -134,3 +134,38 @@ def update_media_item(
                 media_id,
             ),
         )
+
+
+def get_media_item(media_id: int):
+    """Return one media record by ID, or None if it does not exist."""
+    initialize_database()
+
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT
+                id,
+                filename,
+                media_type,
+                duration,
+                sort_order,
+                enabled,
+                created_at
+            FROM media
+            WHERE id = ?
+            """,
+            (media_id,),
+        ).fetchone()
+
+
+def delete_media_item(media_id: int):
+    """Delete one media database record and return whether it existed."""
+    initialize_database()
+
+    with get_connection() as connection:
+        cursor = connection.execute(
+            "DELETE FROM media WHERE id = ?",
+            (media_id,),
+        )
+
+        return cursor.rowcount > 0
