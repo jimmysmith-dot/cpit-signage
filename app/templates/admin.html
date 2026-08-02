@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CPIT Signage Administration</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            background: #f2f4f7;
+            color: #1f2933;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            color: #637381;
+        }
+
+        .message {
+            margin: 20px 0;
+            padding: 12px 16px;
+            border: 1px solid #86b995;
+            border-radius: 6px;
+            background: #e8f5eb;
+        }
+
+        .panel {
+            overflow: hidden;
+            margin-top: 25px;
+            border: 1px solid #d8dee4;
+            border-radius: 8px;
+            background: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .filename {
+            font-weight: bold;
+        }
+
+        .thumbnail {
+            width: 120px;
+            height: 68px;
+            border: 1px solid #d8dee4;
+            border-radius: 4px;
+            object-fit: contain;
+            background: #111;
+        }
+
+        input[type="number"] {
+            width: 90px;
+            padding: 8px;
+            border: 1px solid #b8c2cc;
+            border-radius: 4px;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+        }
+
+        button,
+        .button {
+            display: inline-block;
+            padding: 11px 18px;
+            border: none;
+            border-radius: 5px;
+            background: #1f5f99;
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:hover,
+        .button:hover {
+            background: #184b79;
+        }
+
+        .secondary {
+            background: #66788a;
+        }
+
+        .secondary:hover {
+            background: #526170;
+        }
+
+        .empty {
+            padding: 40px;
+            text-align: center;
+            color: #637381;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <h1>CPIT Signage Administration</h1>
+
+        <p class="subtitle">
+            Manage the local player playlist.
+        </p>
+
+        {% if saved %}
+            <div class="message">
+                Playlist settings were saved successfully.
+            </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('admin_save') }}">
+            <div class="panel">
+                {% if media_items %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Preview</th>
+                                <th>Filename</th>
+                                <th>Duration</th>
+                                <th>Order</th>
+                                <th>Enabled</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for item in media_items %}
+                                <tr>
+                                    <td>
+                                        <img
+                                            class="thumbnail"
+                                            src="{{ url_for(
+                                                'media',
+                                                filename=item['filename']
+                                            ) }}"
+                                            alt=""
+                                        >
+                                    </td>
+
+                                    <td class="filename">
+                                        {{ item["filename"] }}
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            type="number"
+                                            name="duration_{{ item['id'] }}"
+                                            value="{{ item['duration'] }}"
+                                            min="1"
+                                            max="3600"
+                                            required
+                                        >
+                                        seconds
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            type="number"
+                                            name="order_{{ item['id'] }}"
+                                            value="{{ item['sort_order'] }}"
+                                            min="0"
+                                            required
+                                        >
+                                    </td>
+
+                                    <td>
+                                        <input
+                                            type="checkbox"
+                                            name="enabled_{{ item['id'] }}"
+                                            {% if item["enabled"] %}
+                                                checked
+                                            {% endif %}
+                                        >
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty">
+                        No media records are available.
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="actions">
+                <button type="submit">
+                    Save Playlist
+                </button>
+
+                <a
+                    class="button secondary"
+                    href="{{ url_for('index') }}"
+                    target="_blank"
+                >
+                    Open Player
+                </a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

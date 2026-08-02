@@ -82,3 +82,55 @@ def get_enabled_slides():
             ORDER BY sort_order ASC, id ASC
             """
         ).fetchall()
+
+def get_all_media():
+    """Return all media records, including disabled items."""
+    initialize_database()
+
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT
+                id,
+                filename,
+                media_type,
+                duration,
+                sort_order,
+                enabled,
+                created_at
+            FROM media
+            ORDER BY sort_order ASC, id ASC
+            """
+        ).fetchall()
+
+
+def update_media_item(
+    media_id: int,
+    duration: int,
+    sort_order: int,
+    enabled: bool,
+):
+    """Update editable settings for one media record."""
+    initialize_database()
+
+    duration = max(1, min(int(duration), 3600))
+    sort_order = max(0, int(sort_order))
+    enabled_value = 1 if enabled else 0
+
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE media
+            SET
+                duration = ?,
+                sort_order = ?,
+                enabled = ?
+            WHERE id = ?
+            """,
+            (
+                duration,
+                sort_order,
+                enabled_value,
+                media_id,
+            ),
+        )
