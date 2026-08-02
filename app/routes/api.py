@@ -1,9 +1,14 @@
 from pathlib import Path
+from uuid import uuid4
+
 
 from flask import Blueprint, jsonify, request
+from PIL import Image, UnidentifiedImageError
+from werkzeug.utils import secure_filename
 
 from app.services.database import (
     MEDIA_DIR,
+    create_media_item,
     delete_media_item,
     get_all_media,
     get_enabled_slides,
@@ -12,7 +17,13 @@ from app.services.database import (
 )
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
-
+ALLOWED_IMAGE_EXTENSIONS = {
+	".jpg",
+	".jpeg",
+	".png",
+	".gif",
+	".webp",
+}
 
 def serialize_media(record):
     """Convert a SQLite row into JSON-safe media data."""
@@ -54,6 +65,88 @@ def media_list():
         serialize_media(record)
         for record in records
     ])
+@api_bp.route("/media", methods=["POST"])
+def media_upload():
+    if "file" not in request.files:
+        return jsonify({
+            "error": "No file was included in the request"
+        }), 400
+
+    uploaded_file = request.files["file"]
+
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({
+            "error": "No file was selected"
+        }), 400
+
+    original_name = secure_filename(uploaded_file.filename)
+
+    if not original_name:
+        return jsonify({
+            "error": "The filename is invalid"
+        }), 400
+
+    original_path = Path(original_name)
+    extension = original_path.suffix.lower()
+
+    if extension not in ALLOWED_IMAGE_EXTENSIONS:
+        return jsonify({
+            "error": "Unsupported file type",
+            "allowed_extensions": sorted(ALLOWED_IMAGE_EXTENSIONS),
+        }), 400
+
+    MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+
+    unique_suffix = uuid4().hex[:8]
+    filename = (
+        f"{original_path.stem}-{unique_suffix}{extension}"
+    )
+
+    final_path = MEDIA_DIR / filename
+    temporary_path = MEDIA_DIR / f".uploading-{uuid4().hex}"
+
+    try:
+        uploaded_file.save(temporary_path)
+
+        with Image.open(temporary_path) as image:
+            image.verify()
+
+        temporary_path.replace(final_path)
+
+        record = create_media_item(
+            filename=filename,
+            media_type="image",
+            duration=10,
+            enabled=True,
+        )
+
+        return jsonify(serialize_media(record)), 201
+
+    except UnidentifiedImageError:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The uploaded file is not a valid image"
+        }), 400
+
+    except OSError as error:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The image could not be stored",
+            "details": str(error),
+        }), 500
+
+    except Exception as error:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The upload failed",
+            "details": str(error),
+        }), 500
 
 
 @api_bp.route("/media/<int:media_id>", methods=["GET"])

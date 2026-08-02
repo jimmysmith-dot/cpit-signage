@@ -169,3 +169,62 @@ def delete_media_item(media_id: int):
         )
 
         return cursor.rowcount > 0
+
+
+def create_media_item(
+    filename: str,
+    media_type: str = "image",
+    duration: int = 10,
+    enabled: bool = True,
+):
+    """Insert a new media record and return the created row."""
+    initialize_database()
+
+    duration = max(1, min(int(duration), 3600))
+    enabled_value = 1 if enabled else 0
+
+    with get_connection() as connection:
+        next_sort_order = connection.execute(
+            """
+            SELECT COALESCE(MAX(sort_order), 0) + 1
+            FROM media
+            """
+        ).fetchone()[0]
+
+        cursor = connection.execute(
+            """
+            INSERT INTO media (
+                filename,
+                media_type,
+                duration,
+                sort_order,
+                enabled
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                filename,
+                media_type,
+                duration,
+                next_sort_order,
+                enabled_value,
+            ),
+        )
+
+        media_id = cursor.lastrowid
+
+        return connection.execute(
+            """
+            SELECT
+                id,
+                filename,
+                media_type,
+                duration,
+                sort_order,
+                enabled,
+                created_at
+            FROM media
+            WHERE id = ?
+            """,
+            (media_id,),
+        ).fetchone()

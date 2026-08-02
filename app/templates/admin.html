@@ -130,9 +130,67 @@
             text-align: center;
             color: #637381;
         }
+        .upload-panel {
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #d8dee4;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .upload-zone {
+            padding: 38px 20px;
+            border: 2px dashed #8da2b5;
+            border-radius: 8px;
+            background: #f8fafc;
+            text-align: center;
+            cursor: pointer;
+            transition:
+                border-color 0.2s,
+                background 0.2s;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.drag-active {
+            border-color: #1f5f99;
+            background: #edf5fc;
+        }
+
+        .upload-zone.uploading {
+            cursor: wait;
+            opacity: 0.7;
+        }
+
+        .upload-title {
+            margin: 0 0 8px;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .upload-help {
+            margin: 0;
+            color: #637381;
+        }
+
+        #media-files {
+            display: none;
+        }
+
+        #upload-status {
+            min-height: 24px;
+            margin-top: 12px;
+            color: #2d6a3f;
+            font-weight: bold;
+        }
+
+        #upload-status.error {
+            color: #a32626;
+        }
+
     </style>
 </head>
 
+<script src="/static/js/admin.js" defer></script>
 <body>
     <main class="container">
         <h1>CPIT Signage Administration</h1>
@@ -146,6 +204,38 @@
                 Playlist settings were saved successfully.
             </div>
         {% endif %}
+
+        <section class="upload-panel">
+            <h2>Upload Media</h2>
+
+            <div
+                id="upload-zone"
+                class="upload-zone"
+                role="button"
+                tabindex="0"
+                aria-label="Upload images"
+            >
+                <p class="upload-title">
+                    Drop images here
+                </p>
+
+                <p class="upload-help">
+                    or click to browse
+                </p>
+            </div>
+
+            <input
+                id="media-files"
+                type="file"
+                accept=".jpg,.jpeg,.png,.gif,.webp"
+                multiple
+            >
+
+            <div
+                id="upload-status"
+                aria-live="polite"
+            ></div>
+        </section>
 
         <form method="post" action="{{ url_for('admin.save') }}">
             <div class="panel">

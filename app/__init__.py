@@ -16,7 +16,7 @@ def create_app():
         template_folder=str(BASE_DIR / "app/templates"),
         static_folder=str(BASE_DIR / "app/static"),
     )
-
+    app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
     app.register_blueprint(player_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(admin_bp)
