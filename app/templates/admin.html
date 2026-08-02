@@ -24,7 +24,7 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -46,7 +46,7 @@
         }
 
         .panel {
-            overflow: hidden;
+            overflow-x: auto;
             margin-top: 25px;
             border: 1px solid #d8dee4;
             border-radius: 8px;
@@ -63,6 +63,7 @@
             padding: 14px;
             border-bottom: 1px solid #e5e7eb;
             text-align: left;
+            vertical-align: middle;
         }
 
         th {
@@ -94,9 +95,9 @@
         }
 
         .actions {
-            margin-top: 20px;
             display: flex;
             gap: 12px;
+            margin-top: 20px;
         }
 
         button,
@@ -130,6 +131,7 @@
             text-align: center;
             color: #637381;
         }
+
         .upload-panel {
             margin-top: 25px;
             padding: 20px;
@@ -187,10 +189,65 @@
             color: #a32626;
         }
 
+        .media-row {
+            transition:
+                opacity 0.15s,
+                background 0.15s;
+        }
+
+        .media-row.dragging {
+            opacity: 0.45;
+            background: #eaf3fb;
+        }
+
+        .media-row.drag-over {
+            border-top: 3px solid #1f5f99;
+        }
+
+        .drag-handle {
+            width: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .reorder-message {
+            min-height: 24px;
+            margin-top: 12px;
+            font-weight: bold;
+            color: #2d6a3f;
+        }
+
+        .reorder-message.error {
+            color: #a32626;
+        }
+
+        .delete-button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: #b42318;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background: #8f1c13;
+        }
+
+        .delete-button:disabled {
+            cursor: wait;
+            opacity: 0.6;
+        }
     </style>
 </head>
 
-<script src="/static/js/admin.js" defer></script>
 <body>
     <main class="container">
         <h1>CPIT Signage Administration</h1>
@@ -237,23 +294,39 @@
             ></div>
         </section>
 
-        <form method="post" action="{{ url_for('admin.save') }}">
+        <form
+            method="post"
+            action="{{ url_for('admin.save') }}"
+        >
             <div class="panel">
                 {% if media_items %}
                     <table>
                         <thead>
                             <tr>
+                                <th>Move</th>
                                 <th>Preview</th>
                                 <th>Filename</th>
                                 <th>Duration</th>
                                 <th>Order</th>
                                 <th>Enabled</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             {% for item in media_items %}
-                                <tr>
+                                <tr
+                                    class="media-row"
+                                    data-media-id="{{ item['id'] }}"
+                                >
+                                    <td
+                                        class="drag-handle"
+                                        title="Drag to reorder"
+                                        draggable="true"
+                                    >
+                                        ☰
+                                    </td>
+
                                     <td>
                                         <img
                                             class="thumbnail"
@@ -262,6 +335,7 @@
                                                 filename=item['filename']
                                             ) }}"
                                             alt=""
+                                            draggable="false"
                                         >
                                     </td>
 
@@ -300,6 +374,17 @@
                                             {% endif %}
                                         >
                                     </td>
+
+                                    <td>
+                                        <button
+                                            type="button"
+                                            class="delete-button"
+                                            data-media-id="{{ item['id'] }}"
+                                            data-filename="{{ item['filename'] }}"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -310,6 +395,12 @@
                     </div>
                 {% endif %}
             </div>
+
+            <div
+                id="reorder-status"
+                class="reorder-message"
+                aria-live="polite"
+            ></div>
 
             <div class="actions">
                 <button type="submit">
@@ -326,5 +417,10 @@
             </div>
         </form>
     </main>
+
+    <script
+        src="{{ url_for('static', filename='js/admin.js') }}"
+        defer
+    ></script>
 </body>
 </html>

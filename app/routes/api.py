@@ -13,6 +13,7 @@ from app.services.database import (
     get_all_media,
     get_enabled_slides,
     get_media_item,
+    reorder_media_items,
     update_media_item,
 )
 
@@ -38,6 +39,48 @@ def serialize_media(record):
         "created_at": record["created_at"],
     }
 
+
+
+@api_bp.route("/media/reorder", methods=["PUT"])
+def media_reorder():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({
+            "error": "Request body must contain JSON"
+        }), 400
+
+    media_ids = data.get("media_ids")
+
+    if not isinstance(media_ids, list) or not media_ids:
+        return jsonify({
+            "error": "media_ids must be a non-empty array"
+        }), 400
+
+    try:
+        if any(media_id is None for media_id in media_ids):
+            raise ValueError(
+                "The reorder list contains a missing media ID"
+            )
+
+        normalized_ids = [
+            int(media_id)
+            for media_id in media_ids
+        ]
+
+        reorder_media_items(normalized_ids)
+
+    except (TypeError, ValueError) as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    records = get_all_media()
+
+    return jsonify([
+        serialize_media(record)
+        for record in records
+    ])
 
 @api_bp.route("/slides", methods=["GET"])
 def slides():
