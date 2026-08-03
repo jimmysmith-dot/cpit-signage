@@ -228,3 +228,36 @@ def create_media_item(
             """,
             (media_id,),
         ).fetchone()
+
+
+def reorder_media_items(media_ids):
+    """Update playlist order from an ordered list of media IDs."""
+    initialize_database()
+
+    with get_connection() as connection:
+        existing_ids = {
+            row["id"]
+            for row in connection.execute(
+                "SELECT id FROM media"
+            ).fetchall()
+        }
+
+        requested_ids = [int(media_id) for media_id in media_ids]
+
+        if len(requested_ids) != len(set(requested_ids)):
+            raise ValueError("Duplicate media IDs are not allowed")
+
+        if set(requested_ids) != existing_ids:
+            raise ValueError(
+                "The reorder list must include every media item exactly once"
+            )
+
+        for sort_order, media_id in enumerate(requested_ids, start=1):
+            connection.execute(
+                """
+                UPDATE media
+                SET sort_order = ?
+                WHERE id = ?
+                """,
+                (sort_order, media_id),
+            )

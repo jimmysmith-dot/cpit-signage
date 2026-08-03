@@ -2,329 +2,179 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CPIT Signage Administration</title>
-
     <style>
-        * {
-            box-sizing: border-box;
+        :root {
+            --page-bg: #eef2f6;
+            --panel-bg: #ffffff;
+            --panel-border: #d8e0e8;
+            --text: #1f2933;
+            --muted: #637381;
+            --primary: #1f5f99;
+            --primary-hover: #184b79;
+            --secondary: #66788a;
+            --secondary-hover: #526170;
+            --success: #2d6a3f;
+            --danger: #b42318;
+            --danger-hover: #8f1c13;
+            --shadow: 0 8px 24px rgba(31, 41, 51, 0.08);
+            --radius: 10px;
         }
-
-        body {
-            margin: 0;
-            padding: 30px;
-            background: #f2f4f7;
-            color: #1f2933;
-            font-family: Arial, sans-serif;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            margin-top: 0;
-            color: #637381;
-        }
-
-        .message {
-            margin: 20px 0;
-            padding: 12px 16px;
-            border: 1px solid #86b995;
-            border-radius: 6px;
-            background: #e8f5eb;
-        }
-
-        .panel {
-            overflow: hidden;
-            margin-top: 25px;
-            border: 1px solid #d8dee4;
-            border-radius: 8px;
-            background: white;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            padding: 14px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: left;
-        }
-
-        th {
-            background: #f8fafc;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        .filename {
-            font-weight: bold;
-        }
-
-        .thumbnail {
-            width: 120px;
-            height: 68px;
-            border: 1px solid #d8dee4;
-            border-radius: 4px;
-            object-fit: contain;
-            background: #111;
-        }
-
-        input[type="number"] {
-            width: 90px;
-            padding: 8px;
-            border: 1px solid #b8c2cc;
-            border-radius: 4px;
-        }
-
-        .actions {
-            margin-top: 20px;
-            display: flex;
-            gap: 12px;
-        }
-
-        button,
-        .button {
-            display: inline-block;
-            padding: 11px 18px;
-            border: none;
-            border-radius: 5px;
-            background: #1f5f99;
-            color: white;
-            text-decoration: none;
-            font-size: 1rem;
-            cursor: pointer;
-        }
-
-        button:hover,
-        .button:hover {
-            background: #184b79;
-        }
-
-        .secondary {
-            background: #66788a;
-        }
-
-        .secondary:hover {
-            background: #526170;
-        }
-
-        .empty {
-            padding: 40px;
-            text-align: center;
-            color: #637381;
-        }
-        .upload-panel {
-            margin-top: 25px;
-            padding: 20px;
-            border: 1px solid #d8dee4;
-            border-radius: 8px;
-            background: white;
-        }
-
-        .upload-zone {
-            padding: 38px 20px;
-            border: 2px dashed #8da2b5;
-            border-radius: 8px;
-            background: #f8fafc;
-            text-align: center;
-            cursor: pointer;
-            transition:
-                border-color 0.2s,
-                background 0.2s;
-        }
-
-        .upload-zone:hover,
-        .upload-zone.drag-active {
-            border-color: #1f5f99;
-            background: #edf5fc;
-        }
-
-        .upload-zone.uploading {
-            cursor: wait;
-            opacity: 0.7;
-        }
-
-        .upload-title {
-            margin: 0 0 8px;
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
-
-        .upload-help {
-            margin: 0;
-            color: #637381;
-        }
-
-        #media-files {
-            display: none;
-        }
-
-        #upload-status {
-            min-height: 24px;
-            margin-top: 12px;
-            color: #2d6a3f;
-            font-weight: bold;
-        }
-
-        #upload-status.error {
-            color: #a32626;
-        }
-
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--page-bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        button, input, select, textarea { font: inherit; }
+        button, .button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 16px; border: 0; border-radius: 7px; background: var(--primary); color: #fff; text-decoration: none; font-weight: 700; cursor: pointer; }
+        button:hover, .button:hover { background: var(--primary-hover); }
+        button:disabled { cursor: wait; opacity: 0.62; }
+        .secondary { background: var(--secondary); }
+        .secondary:hover { background: var(--secondary-hover); }
+        .app-header { background: #14324a; color: #fff; box-shadow: var(--shadow); }
+        .app-header-inner, .status-strip, .page { width: min(1440px, calc(100% - 32px)); margin: 0 auto; }
+        .app-header-inner { padding: 22px 0; }
+        .header-topline { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+        .brand h1 { margin: 0; font-size: clamp(1.65rem, 3vw, 2.3rem); }
+        .brand p { margin: 6px 0 0; color: #c7d8e6; }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .status-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding-bottom: 18px; }
+        .status-card { min-height: 72px; padding: 13px 15px; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; background: rgba(255,255,255,.08); }
+        .status-label { display: block; color: #bfd0de; font-size: .77rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+        .status-value { display: block; margin-top: 7px; font-size: 1.04rem; font-weight: 800; }
+        .online-dot { display: inline-block; width: 10px; height: 10px; margin-right: 7px; border-radius: 50%; background: #5dd27a; }
+        .page { padding: 28px 0 50px; }
+        .notice { margin-bottom: 20px; padding: 13px 16px; border: 1px solid #86b995; border-radius: 8px; background: #e8f5eb; color: #214e2f; font-weight: 700; }
+        .section-grid { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.25fr); gap: 22px; align-items: start; }
+        .panel { overflow: hidden; border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--panel-bg); box-shadow: var(--shadow); }
+        .library-panel { margin-top: 22px; }
+        .panel-header { display: flex; justify-content: space-between; gap: 18px; padding: 20px 22px; border-bottom: 1px solid var(--panel-border); }
+        .panel-header h2 { margin: 0; font-size: 1.25rem; }
+        .panel-header p { margin: 5px 0 0; color: var(--muted); line-height: 1.45; }
+        .panel-body { padding: 22px; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+        .form-field { display: flex; flex-direction: column; gap: 7px; }
+        .form-field.full { grid-column: 1 / -1; }
+        .form-field label { font-size: .9rem; font-weight: 800; }
+        .form-field small { color: var(--muted); }
+        .form-field input[type="text"], .form-field input[type="number"], .form-field select, .form-field textarea { width: 100%; padding: 10px 11px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
+        .form-field textarea { min-height: 120px; resize: vertical; }
+        .color-control { display: grid; grid-template-columns: 58px 1fr; gap: 9px; align-items: center; }
+        .color-control input[type="color"] { width: 58px; height: 42px; padding: 3px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
+        .designer-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+        .inline-status, .reorder-message { min-height: 24px; margin-top: 12px; color: var(--success); font-weight: 800; }
+        .inline-status.error, .reorder-message.error { color: var(--danger); }
+        .preview-shell { position: sticky; top: 18px; }
+        .preview-frame { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16/9; border: 1px solid #aeb9c4; border-radius: 10px; background: #153a5b; box-shadow: 0 14px 34px rgba(31,41,51,.18); }
+        .preview-accent { position: absolute; inset: 0 0 auto; height: 10px; background: #75b9e6; }
+        .preview-content { position: absolute; inset: 9% 8% 10%; display: flex; flex-direction: column; justify-content: center; color: #fff; text-align: center; }
+        .preview-title { margin: 0; font-size: clamp(1.2rem,3vw,2.4rem); font-weight: 850; line-height: 1.08; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .preview-divider { width: 24%; height: 5px; margin: 6% auto 5%; border-radius: 99px; background: #75b9e6; }
+        .preview-divider.hidden { display: none; }
+        .preview-body { margin: 0; font-size: clamp(.78rem,1.7vw,1.35rem); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .preview-footer { position: absolute; right: 8%; bottom: 6%; left: 8%; margin: 0; color: inherit; font-size: clamp(.58rem,1.15vw,.95rem); line-height: 1.3; text-align: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .preview-note { margin: 13px 0 0; color: var(--muted); font-size: .9rem; }
+        .upload-zone { padding: 38px 20px; border: 2px dashed #8da2b5; border-radius: 8px; background: #f8fafc; text-align: center; cursor: pointer; }
+        .upload-zone:hover, .upload-zone.drag-active { border-color: var(--primary); background: #edf5fc; }
+        .upload-zone.uploading { cursor: wait; opacity: .68; }
+        .upload-title { margin: 0 0 8px; font-size: 1.18rem; font-weight: 850; }
+        .upload-help { margin: 0; color: var(--muted); }
+        #media-files { display: none; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; min-width: 960px; border-collapse: collapse; }
+        th, td { padding: 13px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: middle; }
+        th { background: #f8fafc; color: #344553; font-size: .79rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+        tr:last-child td { border-bottom: 0; }
+        .media-row:hover { background: #fbfdff; }
+        .media-row.dragging { opacity: .45; background: #eaf3fb; }
+        .media-row.drag-over { box-shadow: inset 0 3px 0 var(--primary); }
+        .drag-handle { width: 56px; text-align: center; font-size: 1.5rem; cursor: grab; user-select: none; }
+        .thumbnail { width: 120px; height: 68px; border: 1px solid #d8dee4; border-radius: 5px; object-fit: contain; background: #111; }
+        .filename { max-width: 260px; font-weight: 800; overflow-wrap: anywhere; }
+        .table-number { width: 88px; padding: 8px; border: 1px solid #b8c2cc; border-radius: 5px; }
+        .enabled-toggle { width: 20px; height: 20px; cursor: pointer; }
+        .delete-button { min-height: 36px; padding: 7px 11px; background: var(--danger); font-size: .88rem; }
+        .delete-button:hover { background: var(--danger-hover); }
+        .empty { padding: 42px 20px; color: var(--muted); text-align: center; }
+        .playlist-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-top: 1px solid var(--panel-border); background: #fbfcfd; }
+        .playlist-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        @media (max-width: 980px) { .status-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-grid { grid-template-columns: 1fr; } .preview-shell { position: static; } }
+        @media (max-width: 680px) { .app-header-inner, .status-strip, .page { width: min(100% - 20px,1440px); } .header-topline { flex-direction: column; } .status-strip { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } }
     </style>
 </head>
-
-<script src="/static/js/admin.js" defer></script>
 <body>
-    <main class="container">
-        <h1>CPIT Signage Administration</h1>
-
-        <p class="subtitle">
-            Manage the local player playlist.
-        </p>
-
-        {% if saved %}
-            <div class="message">
-                Playlist settings were saved successfully.
-            </div>
-        {% endif %}
-
-        <section class="upload-panel">
-            <h2>Upload Media</h2>
-
-            <div
-                id="upload-zone"
-                class="upload-zone"
-                role="button"
-                tabindex="0"
-                aria-label="Upload images"
-            >
-                <p class="upload-title">
-                    Drop images here
-                </p>
-
-                <p class="upload-help">
-                    or click to browse
-                </p>
-            </div>
-
-            <input
-                id="media-files"
-                type="file"
-                accept=".jpg,.jpeg,.png,.gif,.webp"
-                multiple
-            >
-
-            <div
-                id="upload-status"
-                aria-live="polite"
-            ></div>
-        </section>
-
-        <form method="post" action="{{ url_for('admin.save') }}">
-            <div class="panel">
-                {% if media_items %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Preview</th>
-                                <th>Filename</th>
-                                <th>Duration</th>
-                                <th>Order</th>
-                                <th>Enabled</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for item in media_items %}
-                                <tr>
-                                    <td>
-                                        <img
-                                            class="thumbnail"
-                                            src="{{ url_for(
-                                                'player.media',
-                                                filename=item['filename']
-                                            ) }}"
-                                            alt=""
-                                        >
-                                    </td>
-
-                                    <td class="filename">
-                                        {{ item["filename"] }}
-                                    </td>
-
-                                    <td>
-                                        <input
-                                            type="number"
-                                            name="duration_{{ item['id'] }}"
-                                            value="{{ item['duration'] }}"
-                                            min="1"
-                                            max="3600"
-                                            required
-                                        >
-                                        seconds
-                                    </td>
-
-                                    <td>
-                                        <input
-                                            type="number"
-                                            name="order_{{ item['id'] }}"
-                                            value="{{ item['sort_order'] }}"
-                                            min="0"
-                                            required
-                                        >
-                                    </td>
-
-                                    <td>
-                                        <input
-                                            type="checkbox"
-                                            name="enabled_{{ item['id'] }}"
-                                            {% if item["enabled"] %}
-                                                checked
-                                            {% endif %}
-                                        >
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% else %}
-                    <div class="empty">
-                        No media records are available.
+<header class="app-header">
+    <div class="app-header-inner">
+        <div class="header-topline">
+            <div class="brand"><h1>CPIT Signage</h1><p>Create, upload, arrange, and manage lobby content.</p></div>
+            <div class="header-actions"><a class="button secondary" href="{{ url_for('player.index') }}" target="_blank" rel="noopener">Open Player</a></div>
+        </div>
+    </div>
+    <div class="status-strip">
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.1-dev</span></div>
+        <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
+        <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items|length }}</span></div>
+        <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
+    </div>
+</header>
+<main class="page">
+    {% if saved %}<div class="notice">Playlist settings were saved successfully.</div>{% endif %}
+    <div class="section-grid">
+        <section class="panel">
+            <div class="panel-header"><div><h2>Create Sign</h2><p>Build a professional 1920 × 1080 message slide.</p></div></div>
+            <div class="panel-body">
+                <form id="create-sign-form">
+                    <div class="form-grid">
+                        <div class="form-field full"><label for="sign-title">Title</label><input id="sign-title" type="text" maxlength="250" placeholder="Lobby Remodel Update"></div>
+                        <div class="form-field full"><label for="sign-body">Message</label><textarea id="sign-body" maxlength="2000" placeholder="Our lobby renovation begins soon. Thank you for your patience."></textarea></div>
+                        <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><small>Optional closing line shown near the bottom.</small></div>
+                        <div class="form-field"><label for="sign-alignment">Alignment</label><select id="sign-alignment"><option value="left">Left</option><option value="center" selected>Center</option><option value="right">Right</option></select></div>
+                        <div class="form-field"><label for="sign-duration">Duration</label><input id="sign-duration" type="number" min="1" max="3600" value="10" required><small>Seconds on screen.</small></div>
+                        <div class="form-field"><label>Background</label><div class="color-control"><input id="sign-background-color" type="color" value="#153a5b"><input id="sign-background-hex" type="text" value="#153A5B" maxlength="7"></div></div>
+                        <div class="form-field"><label>Text</label><div class="color-control"><input id="sign-text-color" type="color" value="#ffffff"><input id="sign-text-hex" type="text" value="#FFFFFF" maxlength="7"></div></div>
+                        <div class="form-field"><label>Accent</label><div class="color-control"><input id="sign-accent-color" type="color" value="#75b9e6"><input id="sign-accent-hex" type="text" value="#75B9E6" maxlength="7"></div></div>
                     </div>
-                {% endif %}
+                    <div class="designer-actions"><button id="create-sign-button" type="submit">Create Sign</button><button id="reset-sign-button" class="secondary" type="button">Reset</button></div>
+                    <div id="create-sign-status" class="inline-status" aria-live="polite"></div>
+                </form>
             </div>
-
-            <div class="actions">
-                <button type="submit">
-                    Save Playlist
-                </button>
-
-                <a
-                    class="button secondary"
-                    href="{{ url_for('player.index') }}"
-                    target="_blank"
-                >
-                    Open Player
-                </a>
+        </section>
+        <section class="panel preview-shell">
+            <div class="panel-header"><div><h2>Live Preview</h2><p>Approximate 16:9 preview of the generated sign.</p></div></div>
+            <div class="panel-body">
+                <div id="sign-preview" class="preview-frame">
+                    <div id="preview-accent" class="preview-accent"></div>
+                    <div id="preview-content" class="preview-content"><h3 id="preview-title" class="preview-title">Lobby Remodel Update</h3><div id="preview-divider" class="preview-divider"></div><p id="preview-body" class="preview-body">Our lobby renovation begins soon. Thank you for your patience.</p></div>
+                    <p id="preview-footer" class="preview-footer">We appreciate you staying with us.</p>
+                </div>
+                <p class="preview-note">The server renders the final slide as a full-size 1920 × 1080 PNG.</p>
             </div>
-        </form>
-    </main>
+        </section>
+    </div>
+    <section class="panel library-panel">
+        <div class="panel-header"><div><h2>Upload Images</h2><p>Add renderings, photographs, announcements, or promotional graphics.</p></div></div>
+        <div class="panel-body"><div id="upload-zone" class="upload-zone" role="button" tabindex="0"><p class="upload-title">Drop images here</p><p class="upload-help">or click to browse</p></div><input id="media-files" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" multiple><div id="upload-status" class="inline-status" aria-live="polite"></div></div>
+    </section>
+    <form method="post" action="{{ url_for('admin.save') }}">
+        <section class="panel library-panel">
+            <div class="panel-header"><div><h2>Playlist</h2><p>Drag by the handle to reorder. Adjust duration and visibility, then save.</p></div></div>
+            {% if media_items %}
+            <div class="table-wrap"><table><thead><tr><th>Move</th><th>Preview</th><th>Filename</th><th>Duration</th><th>Order</th><th>Enabled</th><th>Actions</th></tr></thead><tbody id="media-table-body">
+            {% for item in media_items %}
+                <tr class="media-row" data-media-id="{{ item['id'] }}">
+                    <td class="drag-handle" title="Drag to reorder" draggable="true">☰</td>
+                    <td><img class="thumbnail" src="{{ url_for('player.media', filename=item['filename']) }}" alt="" draggable="false"></td>
+                    <td class="filename">{{ item['filename'] }}</td>
+                    <td><input class="table-number" type="number" name="duration_{{ item['id'] }}" value="{{ item['duration'] }}" min="1" max="3600" required> seconds</td>
+                    <td><input class="table-number" type="number" name="order_{{ item['id'] }}" value="{{ item['sort_order'] }}" min="0" required></td>
+                    <td><input class="enabled-toggle" type="checkbox" name="enabled_{{ item['id'] }}" {% if item['enabled'] %}checked{% endif %}></td>
+                    <td><button type="button" class="delete-button" data-media-id="{{ item['id'] }}" data-filename="{{ item['filename'] }}">Delete</button></td>
+                </tr>
+            {% endfor %}
+            </tbody></table></div>
+            {% else %}<div class="empty">No media records are available.</div>{% endif %}
+            <div class="playlist-footer"><div id="reorder-status" class="reorder-message" aria-live="polite"></div><div class="playlist-actions"><button type="submit">Save Playlist</button><a class="button secondary" href="{{ url_for('player.index') }}" target="_blank" rel="noopener">Open Player</a></div></div>
+        </section>
+    </form>
+</main>
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
 </body>
 </html>
