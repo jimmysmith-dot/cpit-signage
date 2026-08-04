@@ -15,6 +15,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const resetSignButton = document.getElementById("reset-sign-button");
     const createSignStatus = document.getElementById("create-sign-status");
 
+    const templatePanel = document.getElementById("template-panel");
+    const templateSelect = document.getElementById("sign-template");
+    const templateDescription = document.getElementById(
+        "template-description"
+    );
+    const applyTemplateButton = document.getElementById(
+        "apply-template-button"
+    );
+
     const signTitle = document.getElementById("sign-title");
     const signBody = document.getElementById("sign-body");
     const signFooter = document.getElementById("sign-footer");
@@ -63,6 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewBody = document.getElementById("preview-body");
     const previewFooter = document.getElementById("preview-footer");
 
+    let signTemplates = [];
+
     const DEFAULT_SIGN = {
         title: "Lobby Remodel Update",
         body: "Our lobby renovation begins soon.\nThank you for your patience.",
@@ -90,6 +101,200 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         element.textContent = message;
         element.classList.toggle("error", isError);
+    }
+
+    function setTemplateDescription(message, isError = false) {
+        if (!templateDescription) {
+            return;
+        }
+
+        templateDescription.textContent = message;
+        templateDescription.style.color = isError
+            ? "var(--danger)"
+            : "";
+    }
+
+    function populateTemplateSelect(templates) {
+        if (!templateSelect) {
+            return;
+        }
+
+        templateSelect.innerHTML = "";
+
+        templates.forEach((template) => {
+            const option = document.createElement("option");
+            option.value = template.id;
+            option.textContent = template.name;
+            templateSelect.appendChild(option);
+        });
+
+        templateSelect.disabled = templates.length === 0;
+
+        if (applyTemplateButton) {
+            applyTemplateButton.disabled = templates.length === 0;
+        }
+
+        if (templatePanel) {
+            templatePanel.classList.remove("template-loading");
+        }
+
+        updateTemplateDescription();
+    }
+
+    function getSelectedTemplate() {
+        if (!templateSelect) {
+            return null;
+        }
+
+        return signTemplates.find(
+            (template) => template.id === templateSelect.value
+        ) || null;
+    }
+
+    function updateTemplateDescription() {
+        const template = getSelectedTemplate();
+
+        if (!template) {
+            setTemplateDescription(
+                "Choose a template to prefill the sign designer."
+            );
+            return;
+        }
+
+        setTemplateDescription(template.description);
+    }
+
+    function setColorControls(
+        colorInput,
+        hexInput,
+        value
+    ) {
+        if (!colorInput || !hexInput) {
+            return;
+        }
+
+        const normalized = normalizedHex(value, "#FFFFFF");
+        colorInput.value = normalized.toLowerCase();
+        hexInput.value = normalized;
+    }
+
+    function applyTemplate(template) {
+        if (!template) {
+            setStatus(
+                createSignStatus,
+                "Select a template before applying it.",
+                true
+            );
+            return;
+        }
+
+        signTitle.value = template.title || "";
+        signBody.value = template.body || "";
+        signFooter.value = template.footer || "";
+        signAlignment.value = template.alignment || "center";
+        signDuration.value = String(template.duration || 10);
+
+        setColorControls(
+            backgroundColor,
+            backgroundHex,
+            template.background_color || DEFAULT_SIGN.backgroundColor
+        );
+
+        setColorControls(
+            textColor,
+            textHex,
+            template.text_color || DEFAULT_SIGN.textColor
+        );
+
+        setColorControls(
+            accentColor,
+            accentHex,
+            template.accent_color || DEFAULT_SIGN.accentColor
+        );
+
+        if (overlayOpacity) {
+            overlayOpacity.value = String(
+                template.overlay_opacity ?? DEFAULT_SIGN.overlayOpacity
+            );
+        }
+
+        /*
+         * Applying a template resets to a solid background. The user
+         * may switch to a library image afterward without losing the
+         * template's text, colors, alignment, or duration.
+         */
+        if (backgroundModeColor) {
+            backgroundModeColor.checked = true;
+        }
+
+        if (backgroundModeImage) {
+            backgroundModeImage.checked = false;
+        }
+
+        if (backgroundMedia) {
+            backgroundMedia.value = "";
+        }
+
+        updateBackgroundControls();
+
+        setStatus(
+            createSignStatus,
+            `"${template.name}" template applied.`
+        );
+    }
+
+    async function loadSignTemplates() {
+        if (!templateSelect) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/sign-templates");
+
+            let result;
+
+            try {
+                result = await response.json();
+            } catch (error) {
+                throw new Error(
+                    "The server returned an invalid template response."
+                );
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "Unable to load sign templates."
+                );
+            }
+
+            if (!Array.isArray(result) || result.length === 0) {
+                throw new Error(
+                    "No sign templates are currently available."
+                );
+            }
+
+            signTemplates = result;
+            populateTemplateSelect(signTemplates);
+
+        } catch (error) {
+            console.error(error);
+
+            if (templatePanel) {
+                templatePanel.classList.remove("template-loading");
+            }
+
+            if (templateSelect) {
+                templateSelect.innerHTML =
+                    '<option value="">Templates unavailable</option>';
+                templateSelect.disabled = true;
+            }
+
+            if (applyTemplateButton) {
+                applyTemplateButton.disabled = true;
+            }
+
+            setTemplateDescription(error.message, true);
+        }
     }
 
     function refreshMediaCount() {
@@ -391,6 +596,22 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+        if (templateSelect) {
+            templateSelect.addEventListener(
+                "change",
+                updateTemplateDescription
+            );
+        }
+
+        if (applyTemplateButton) {
+            applyTemplateButton.addEventListener(
+                "click",
+                () => {
+                    applyTemplate(getSelectedTemplate());
+                }
+            );
+        }
+
         createSignForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             try {
@@ -408,6 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetSignButton.addEventListener("click", resetSignDesigner);
     }
 
+    loadSignTemplates();
     updateBackgroundControls();
 
     function preventFileNavigation(event) {
@@ -669,5 +891,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     refreshMediaCount();
-    console.log("CPIT Signage admin and sign designer controls initialized.");
+    console.log("CPIT Signage Studio controls initialized.");
 });

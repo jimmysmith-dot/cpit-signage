@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPIT Signage Administration</title>
+    <title>CPIT Signage Studio</title>
     <style>
         :root {
             --page-bg: #eef2f6;
@@ -57,6 +57,12 @@
         .form-field small { color: var(--muted); }
         .form-field input[type="text"], .form-field input[type="number"], .form-field select, .form-field textarea { width: 100%; padding: 10px 11px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
         .form-field textarea { min-height: 120px; resize: vertical; }
+        .template-panel { padding: 16px; border: 1px solid #d8e0e8; border-radius: 8px; background: #f8fafc; }
+        .template-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; }
+        .template-toolbar select { width: 100%; padding: 10px 11px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
+        .template-description { min-height: 42px; margin: 10px 0 0; color: var(--muted); line-height: 1.45; }
+        .template-loading { opacity: .65; }
+        .studio-badge { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 8px; padding: 5px 9px; border-radius: 999px; background: #eaf3fb; color: #184b79; font-size: .76rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
         .color-control { display: grid; grid-template-columns: 58px 1fr; gap: 9px; align-items: center; }
         .color-control input[type="color"] { width: 58px; height: 42px; padding: 3px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
         .background-mode { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 12px; border: 1px solid #d8e0e8; border-radius: 7px; background: #f8fafc; }
@@ -112,12 +118,12 @@
 <header class="app-header">
     <div class="app-header-inner">
         <div class="header-topline">
-            <div class="brand"><h1>CPIT Signage</h1><p>Create, upload, arrange, and manage lobby content.</p></div>
+            <div class="brand"><h1>CPIT Signage Studio</h1><p>Create, upload, arrange, and publish display content.</p></div>
             <div class="header-actions"><a class="button secondary" href="{{ url_for('player.index') }}" target="_blank" rel="noopener">Open Player</a></div>
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.2-dev</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.3-dev</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
         <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items|length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
@@ -127,10 +133,56 @@
     {% if saved %}<div class="notice">Playlist settings were saved successfully.</div>{% endif %}
     <div class="section-grid">
         <section class="panel">
-            <div class="panel-header"><div><h2>Create Sign</h2><p>Build a professional 1920 × 1080 message slide.</p></div></div>
+            <div class="panel-header">
+                <div>
+                    <span class="studio-badge">Content Studio</span>
+                    <h2>Create Sign</h2>
+                    <p>
+                        Start from a template or build a custom
+                        1920 × 1080 message slide.
+                    </p>
+                </div>
+            </div>
             <div class="panel-body">
                 <form id="create-sign-form">
                     <div class="form-grid">
+                        <div class="form-field full">
+                            <div
+                                id="template-panel"
+                                class="template-panel template-loading"
+                            >
+                                <label for="sign-template">
+                                    Sign Template
+                                </label>
+
+                                <div class="template-toolbar">
+                                    <select
+                                        id="sign-template"
+                                        disabled
+                                    >
+                                        <option value="">
+                                            Loading templates...
+                                        </option>
+                                    </select>
+
+                                    <button
+                                        id="apply-template-button"
+                                        type="button"
+                                        disabled
+                                    >
+                                        Apply Template
+                                    </button>
+                                </div>
+
+                                <p
+                                    id="template-description"
+                                    class="template-description"
+                                    aria-live="polite"
+                                >
+                                    Loading available templates...
+                                </p>
+                            </div>
+                        </div>
                         <div class="form-field full"><label for="sign-title">Title</label><input id="sign-title" type="text" maxlength="250" placeholder="Lobby Remodel Update"></div>
                         <div class="form-field full"><label for="sign-body">Message</label><textarea id="sign-body" maxlength="2000" placeholder="Our lobby renovation begins soon. Thank you for your patience."></textarea></div>
                         <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><small>Optional closing line shown near the bottom.</small></div>
