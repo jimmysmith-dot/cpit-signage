@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=CPIT Signage Studio
+Comment=Launch the CPIT Signage kiosk player
+Exec=/opt/cpit-signage/scripts/start-kiosk.sh
+Terminal=false
+Hidden=false
+X-GNOME-Autostart-enabled=true

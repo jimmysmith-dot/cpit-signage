@@ -1,15 +1,18 @@
 [Unit]
-Description=Cpit Signage Player
-After=network.target
+Description=CPIT Signage Studio
+After=network.target graphical.target
+Wants=network.target
 
 [Service]
 Type=simple
-User=user
-Group=user
+User=@CPIT_USER@
+Group=@CPIT_GROUP@
 WorkingDirectory=/opt/cpit-signage
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/opt/cpit-signage/venv/bin/python -m app.app
 Restart=always
 RestartSec=5
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target

@@ -1,144 +1,71 @@
-# CPIT Signage Release Checklist
+# CPIT Signage Studio v1.0 Release Checklist
 
-Use this checklist before every tag.
+## Source and versioning
 
-## 1. Source Control
+- [ ] Working tree is clean
+- [ ] Feature branch has been merged into `main`
+- [ ] `VERSION` contains `1.0.0`
+- [ ] README reflects v1.0 capabilities
+- [ ] CHANGELOG contains the v1.0 release entry
+- [ ] Customer runtime data is not tracked by Git
 
-- [ ] Correct feature branch is active.
-- [ ] `git status` contains only intended changes.
-- [ ] No temporary files are present.
-- [ ] Runtime media is not staged.
-- [ ] SQLite database is not staged.
-- [ ] Backups are not staged.
+## Static validation
 
-Commands:
+- [ ] All Python files compile
+- [ ] Shell scripts pass `bash -n`
+- [ ] No JavaScript console errors
+- [ ] No missing browser resources
 
-```bash
-git branch --show-current
-git status
-```
+## Studio functions
 
-## 2. Python Validation
+- [ ] Templates load and apply
+- [ ] Solid-color signs publish
+- [ ] Image-background signs publish
+- [ ] Logos upload, select, resize, reposition, and delete
+- [ ] Live preview reflects logo and background selections
+- [ ] Published sign appears in the playlist
+- [ ] Clear Designer works
+- [ ] Success and error notifications display correctly
 
-```bash
-./venv/bin/python -m py_compile \
-    app/app.py \
-    app/__init__.py \
-    app/routes/admin.py \
-    app/routes/api.py \
-    app/routes/player.py \
-    app/services/database.py \
-    app/services/slide_generator.py
-```
+## Media and playlist
 
-- [ ] No Python compile errors.
+- [ ] Multi-image upload works
+- [ ] Drag-to-reorder works
+- [ ] Order persists
+- [ ] Duration changes persist
+- [ ] Enable/disable works
+- [ ] Media deletion works
+- [ ] Player polling reflects changes
 
-## 3. Service Validation
+## Appliance operation
 
-```bash
-sudo systemctl restart cpit-player
-sudo systemctl status cpit-player --no-pager -l
-```
+- [ ] Service starts automatically
+- [ ] LightDM autologin works
+- [ ] Chromium launches in kiosk mode
+- [ ] Address bar is not displayed
+- [ ] Screen blanking is disabled
+- [ ] Player recovers after application restart
+- [ ] Player recovers after reboot
+- [ ] Player recovers after power loss
+- [ ] Offline playback works
 
-- [ ] Service is active.
-- [ ] No restart loop.
-- [ ] No critical journal errors.
+## Installer validation on LC8810
 
-## 4. API Smoke Test
+- [ ] Start from fresh Debian 13
+- [ ] Run `sudo ./install.sh`
+- [ ] Installer completes without manual file edits
+- [ ] Health check passes
+- [ ] Reboot enters the kiosk automatically
+- [ ] Administration page is reachable remotely
+- [ ] Test media can be uploaded
+- [ ] A branded sign can be published
+- [ ] Upgrade script preserves content
+- [ ] Uninstall retention option is verified
 
-```bash
-curl -I http://127.0.0.1:5000/
-curl -s http://127.0.0.1:5000/api/slides \
-    | python3 -m json.tool
-curl -s http://127.0.0.1:5000/api/media \
-    | python3 -m json.tool
-```
+## Release
 
-- [ ] Player page returns successfully.
-- [ ] Slides API returns valid JSON.
-- [ ] Media API returns valid JSON.
-
-## 5. Administration Regression Test
-
-- [ ] Admin page loads through SSH tunnel.
-- [ ] Create Sign preview responds to text.
-- [ ] Color controls update preview.
-- [ ] Alignment updates preview.
-- [ ] Create Sign generates valid PNG.
-- [ ] Created sign appears in playlist.
-- [ ] Upload by click works.
-- [ ] Upload by drag and drop works.
-- [ ] Reorder handle works.
-- [ ] Duration saves.
-- [ ] Enabled checkbox saves.
-- [ ] Delete confirmation appears.
-- [ ] Delete removes file and database record.
-- [ ] Media count remains accurate.
-
-## 6. Player Regression Test
-
-- [ ] Player continues looping.
-- [ ] Fade transition works.
-- [ ] Uploaded content appears.
-- [ ] Created sign appears.
-- [ ] Reordered content changes order.
-- [ ] Disabled content disappears.
-- [ ] Deleted content disappears.
-- [ ] All changes appear within polling interval.
-
-## 7. Restart and Recovery
-
-- [ ] Reboot appliance.
-- [ ] Auto-login works.
-- [ ] Flask service starts.
-- [ ] Chromium kiosk starts.
-- [ ] Player resumes automatically.
-- [ ] Tailscale reconnects.
-- [ ] SSH works.
-
-## 8. Documentation
-
-- [ ] README updated.
-- [ ] CHANGELOG updated.
-- [ ] ROADMAP updated if scope changed.
-- [ ] API documentation updated.
-- [ ] Version string updated.
-
-## 9. Commit
-
-```bash
-git add <intended-files>
-git commit -m "Version X.Y.Z - Release description"
-```
-
-- [ ] Commit succeeds.
-- [ ] Working tree is clean.
-
-## 10. Merge
-
-```bash
-git switch main
-git merge --no-ff feature/branch-name
-```
-
-- [ ] Merge succeeds.
-- [ ] Main branch passes smoke test.
-
-## 11. Tag
-
-```bash
-git tag -a vX.Y.Z -m "CPIT Signage vX.Y.Z - Release description"
-```
-
-Verify:
-
-```bash
-git tag -n --sort=version:refname
-git log --oneline --decorate -10
-```
-
-## 12. Backup
-
-- [ ] SQLite backup created.
-- [ ] Media backup created.
-- [ ] Release source archived or pushed to a remote repository.
+- [ ] Final regression test completed
+- [ ] Commit release changes
+- [ ] Create annotated `v1.0.0` tag
+- [ ] Create release archive
+- [ ] Store release notes and checksum
