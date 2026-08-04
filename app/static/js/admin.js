@@ -28,7 +28,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const accentColor = document.getElementById("sign-accent-color");
     const accentHex = document.getElementById("sign-accent-hex");
 
+    const backgroundModeColor = document.getElementById(
+        "background-mode-color"
+    );
+    const backgroundModeImage = document.getElementById(
+        "background-mode-image"
+    );
+    const solidBackgroundOptions = document.getElementById(
+        "solid-background-options"
+    );
+    const imageBackgroundOptions = document.getElementById(
+        "image-background-options"
+    );
+    const overlayOptions = document.getElementById("overlay-options");
+    const backgroundMedia = document.getElementById(
+        "sign-background-media"
+    );
+    const overlayOpacity = document.getElementById(
+        "sign-overlay-opacity"
+    );
+    const overlayValue = document.getElementById(
+        "sign-overlay-value"
+    );
+
     const signPreview = document.getElementById("sign-preview");
+    const previewBackgroundImage = document.getElementById(
+        "preview-background-image"
+    );
+    const previewOverlay = document.getElementById("preview-overlay");
     const previewAccent = document.getElementById("preview-accent");
     const previewContent = document.getElementById("preview-content");
     const previewTitle = document.getElementById("preview-title");
@@ -44,7 +71,10 @@ document.addEventListener("DOMContentLoaded", () => {
         textColor: "#FFFFFF",
         accentColor: "#75B9E6",
         alignment: "center",
-        duration: 10
+        duration: 10,
+        backgroundMode: "color",
+        backgroundMediaId: null,
+        overlayOpacity: 35
     };
 
     if (pageLoadedTime) {
@@ -130,8 +160,48 @@ document.addEventListener("DOMContentLoaded", () => {
             accentColor: normalizedHex(
                 accentHex ? accentHex.value : "",
                 DEFAULT_SIGN.accentColor
-            )
+            ),
+            backgroundMode:
+                backgroundModeImage && backgroundModeImage.checked
+                    ? "image"
+                    : "color",
+            backgroundMediaId:
+                backgroundMedia && backgroundMedia.value
+                    ? Number.parseInt(backgroundMedia.value, 10)
+                    : null,
+            backgroundImageUrl:
+                backgroundMedia &&
+                backgroundMedia.selectedOptions.length
+                    ? backgroundMedia.selectedOptions[0].dataset.url || ""
+                    : "",
+            overlayOpacity:
+                overlayOpacity
+                    ? Number.parseInt(overlayOpacity.value, 10)
+                    : DEFAULT_SIGN.overlayOpacity
         };
+    }
+
+    function updateBackgroundControls() {
+        const useImage =
+            backgroundModeImage && backgroundModeImage.checked;
+
+        if (solidBackgroundOptions) {
+            solidBackgroundOptions.hidden = useImage;
+        }
+
+        if (imageBackgroundOptions) {
+            imageBackgroundOptions.hidden = !useImage;
+        }
+
+        if (overlayOptions) {
+            overlayOptions.hidden = !useImage;
+        }
+
+        if (overlayValue && overlayOpacity) {
+            overlayValue.textContent = `${overlayOpacity.value}%`;
+        }
+
+        updateSignPreview();
     }
 
     function updateSignPreview() {
@@ -140,8 +210,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const values = getSignValues();
+
+        const useImage =
+            values.backgroundMode === "image" &&
+            Boolean(values.backgroundImageUrl);
+
         signPreview.style.backgroundColor = values.backgroundColor;
         signPreview.style.color = values.textColor;
+
+        if (previewBackgroundImage && previewOverlay) {
+            previewBackgroundImage.style.display = useImage
+                ? "block"
+                : "none";
+
+            previewOverlay.style.display = useImage
+                ? "block"
+                : "none";
+
+            if (useImage) {
+                previewBackgroundImage.src =
+                    values.backgroundImageUrl;
+
+                previewOverlay.style.background =
+                    `rgba(0, 0, 0, ${values.overlayOpacity / 100})`;
+            } else {
+                previewBackgroundImage.removeAttribute("src");
+            }
+        }
         previewAccent.style.backgroundColor = values.accentColor;
         previewDivider.style.backgroundColor = values.accentColor;
         previewContent.style.textAlign = values.alignment;
@@ -168,6 +263,25 @@ document.addEventListener("DOMContentLoaded", () => {
         accentColor.value = DEFAULT_SIGN.accentColor.toLowerCase();
         accentHex.value = DEFAULT_SIGN.accentColor;
 
+        if (backgroundModeColor) {
+            backgroundModeColor.checked = true;
+        }
+
+        if (backgroundModeImage) {
+            backgroundModeImage.checked = false;
+        }
+
+        if (backgroundMedia) {
+            backgroundMedia.value = "";
+        }
+
+        if (overlayOpacity) {
+            overlayOpacity.value = String(
+                DEFAULT_SIGN.overlayOpacity
+            );
+        }
+
+        updateBackgroundControls();
         setStatus(createSignStatus, "");
         updateSignPreview();
     }
@@ -181,6 +295,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!Number.isInteger(values.duration) || values.duration < 1 || values.duration > 3600) {
             throw new Error("Duration must be between 1 and 3600 seconds.");
+        }
+
+        if (
+            values.backgroundMode === "image" &&
+            !Number.isInteger(values.backgroundMediaId)
+        ) {
+            throw new Error(
+                "Select a background image from the media library."
+            );
+        }
+
+        if (
+            !Number.isInteger(values.overlayOpacity) ||
+            values.overlayOpacity < 0 ||
+            values.overlayOpacity > 100
+        ) {
+            throw new Error(
+                "Overlay opacity must be between 0 and 100."
+            );
         }
 
         setStatus(createSignStatus, "Generating sign...");
@@ -198,7 +331,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 text_color: values.textColor,
                 accent_color: values.accentColor,
                 alignment: values.alignment,
-                duration: values.duration
+                duration: values.duration,
+                background_media_id:
+                    values.backgroundMode === "image"
+                        ? values.backgroundMediaId
+                        : null,
+                overlay_opacity: values.overlayOpacity
             })
         });
 
@@ -227,6 +365,32 @@ document.addEventListener("DOMContentLoaded", () => {
         syncColorPair(textColor, textHex, DEFAULT_SIGN.textColor);
         syncColorPair(accentColor, accentHex, DEFAULT_SIGN.accentColor);
 
+        [
+            backgroundModeColor,
+            backgroundModeImage
+        ].forEach((element) => {
+            if (element) {
+                element.addEventListener(
+                    "change",
+                    updateBackgroundControls
+                );
+            }
+        });
+
+        if (backgroundMedia) {
+            backgroundMedia.addEventListener(
+                "change",
+                updateSignPreview
+            );
+        }
+
+        if (overlayOpacity) {
+            overlayOpacity.addEventListener(
+                "input",
+                updateBackgroundControls
+            );
+        }
+
         createSignForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             try {
@@ -244,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetSignButton.addEventListener("click", resetSignDesigner);
     }
 
-    updateSignPreview();
+    updateBackgroundControls();
 
     function preventFileNavigation(event) {
         const types = event.dataTransfer

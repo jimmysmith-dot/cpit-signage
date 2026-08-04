@@ -59,6 +59,14 @@
         .form-field textarea { min-height: 120px; resize: vertical; }
         .color-control { display: grid; grid-template-columns: 58px 1fr; gap: 9px; align-items: center; }
         .color-control input[type="color"] { width: 58px; height: 42px; padding: 3px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
+        .background-mode { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 12px; border: 1px solid #d8e0e8; border-radius: 7px; background: #f8fafc; }
+        .background-mode label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+        .background-options[hidden] { display: none; }
+        .overlay-control { display: grid; grid-template-columns: 1fr 70px; gap: 10px; align-items: center; }
+        .overlay-control input[type="range"] { width: 100%; }
+        .overlay-value { padding: 9px 8px; border: 1px solid #b8c2cc; border-radius: 6px; background: #f8fafc; text-align: center; font-weight: 800; }
+        .preview-background-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+        .preview-overlay { position: absolute; inset: 0; display: none; background: rgba(0,0,0,.35); }
         .designer-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
         .inline-status, .reorder-message { min-height: 24px; margin-top: 12px; color: var(--success); font-weight: 800; }
         .inline-status.error, .reorder-message.error { color: var(--danger); }
@@ -109,7 +117,7 @@
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.1-dev</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.2-dev</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
         <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items|length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
@@ -128,7 +136,110 @@
                         <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><small>Optional closing line shown near the bottom.</small></div>
                         <div class="form-field"><label for="sign-alignment">Alignment</label><select id="sign-alignment"><option value="left">Left</option><option value="center" selected>Center</option><option value="right">Right</option></select></div>
                         <div class="form-field"><label for="sign-duration">Duration</label><input id="sign-duration" type="number" min="1" max="3600" value="10" required><small>Seconds on screen.</small></div>
-                        <div class="form-field"><label>Background</label><div class="color-control"><input id="sign-background-color" type="color" value="#153a5b"><input id="sign-background-hex" type="text" value="#153A5B" maxlength="7"></div></div>
+                        <div class="form-field full">
+                            <label>Background Type</label>
+                            <div class="background-mode">
+                                <label>
+                                    <input
+                                        id="background-mode-color"
+                                        type="radio"
+                                        name="background_mode"
+                                        value="color"
+                                        checked
+                                    >
+                                    Solid color
+                                </label>
+                                <label>
+                                    <input
+                                        id="background-mode-image"
+                                        type="radio"
+                                        name="background_mode"
+                                        value="image"
+                                    >
+                                    Existing image
+                                </label>
+                            </div>
+                        </div>
+
+                        <div
+                            id="solid-background-options"
+                            class="form-field full background-options"
+                        >
+                            <label>Background Color</label>
+                            <div class="color-control">
+                                <input
+                                    id="sign-background-color"
+                                    type="color"
+                                    value="#153a5b"
+                                >
+                                <input
+                                    id="sign-background-hex"
+                                    type="text"
+                                    value="#153A5B"
+                                    maxlength="7"
+                                >
+                            </div>
+                        </div>
+
+                        <div
+                            id="image-background-options"
+                            class="form-field full background-options"
+                            hidden
+                        >
+                            <label for="sign-background-media">
+                                Background Image
+                            </label>
+                            <select id="sign-background-media">
+                                <option value="">
+                                    Select an image from the media library
+                                </option>
+                                {% for item in media_items %}
+                                    <option
+                                        value="{{ item['id'] }}"
+                                        data-url="{{ url_for(
+                                            'player.media',
+                                            filename=item['filename']
+                                        ) }}"
+                                    >
+                                        {{ item['filename'] }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small>
+                                Images are cropped to fill the 16:9 sign.
+                            </small>
+                        </div>
+
+                        <div
+                            id="overlay-options"
+                            class="form-field full background-options"
+                            hidden
+                        >
+                            <label for="sign-overlay-opacity">
+                                Dark Overlay
+                            </label>
+                            <div class="overlay-control">
+                                <input
+                                    id="sign-overlay-opacity"
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="5"
+                                    value="35"
+                                >
+                                <output
+                                    id="sign-overlay-value"
+                                    class="overlay-value"
+                                    for="sign-overlay-opacity"
+                                >
+                                    35%
+                                </output>
+                            </div>
+                            <small>
+                                Increase the overlay to improve text
+                                readability over bright images.
+                            </small>
+                        </div>
                         <div class="form-field"><label>Text</label><div class="color-control"><input id="sign-text-color" type="color" value="#ffffff"><input id="sign-text-hex" type="text" value="#FFFFFF" maxlength="7"></div></div>
                         <div class="form-field"><label>Accent</label><div class="color-control"><input id="sign-accent-color" type="color" value="#75b9e6"><input id="sign-accent-hex" type="text" value="#75B9E6" maxlength="7"></div></div>
                     </div>
@@ -141,6 +252,15 @@
             <div class="panel-header"><div><h2>Live Preview</h2><p>Approximate 16:9 preview of the generated sign.</p></div></div>
             <div class="panel-body">
                 <div id="sign-preview" class="preview-frame">
+                    <img
+                        id="preview-background-image"
+                        class="preview-background-image"
+                        alt=""
+                    >
+                    <div
+                        id="preview-overlay"
+                        class="preview-overlay"
+                    ></div>
                     <div id="preview-accent" class="preview-accent"></div>
                     <div id="preview-content" class="preview-content"><h3 id="preview-title" class="preview-title">Lobby Remodel Update</h3><div id="preview-divider" class="preview-divider"></div><p id="preview-body" class="preview-body">Our lobby renovation begins soon. Thank you for your patience.</p></div>
                     <p id="preview-footer" class="preview-footer">We appreciate you staying with us.</p>

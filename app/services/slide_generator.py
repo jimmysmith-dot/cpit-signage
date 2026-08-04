@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from textwrap import wrap
 from uuid import uuid4
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
+
+from app.services.image_tools import (
+    ImageProcessingError,
+    prepare_background,
+)
 
 SLIDE_WIDTH = 1920
 SLIDE_HEIGHT = 1080
@@ -15,6 +19,7 @@ SLIDE_HEIGHT = 1080
 DEFAULT_BACKGROUND = "#153A5B"
 DEFAULT_TEXT_COLOR = "#FFFFFF"
 DEFAULT_ACCENT_COLOR = "#75B9E6"
+DEFAULT_OVERLAY_OPACITY = 35
 
 FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
@@ -208,6 +213,32 @@ def _draw_centered_lines(
     return current_y
 
 
+
+def _create_canvas(
+    *,
+    background_color: str,
+    background_image_path: Path | None,
+    overlay_opacity: int,
+) -> Image.Image:
+    """Create the solid-color or image-based 1920x1080 canvas."""
+    if background_image_path is None:
+        return Image.new(
+            "RGB",
+            (SLIDE_WIDTH, SLIDE_HEIGHT),
+            color=background_color,
+        )
+
+    try:
+        return prepare_background(
+            image_path=background_image_path,
+            target_width=SLIDE_WIDTH,
+            target_height=SLIDE_HEIGHT,
+            overlay_opacity=overlay_opacity,
+        )
+
+    except ImageProcessingError as error:
+        raise SlideGenerationError(str(error)) from error
+
 def create_sign_slide(
     *,
     output_directory: Path,
@@ -218,12 +249,16 @@ def create_sign_slide(
     text_color: str = DEFAULT_TEXT_COLOR,
     accent_color: str = DEFAULT_ACCENT_COLOR,
     alignment: str = "center",
+    background_image_path: Path | None = None,
+    overlay_opacity: int = DEFAULT_OVERLAY_OPACITY,
 ) -> Path:
     """
     Generate a 1920x1080 PNG sign and return its path.
 
-    The generated image is ready to be added to the normal media
-    playlist.
+    The background may be a solid color or a source image. Background
+    images are center-cropped to fill the slide and can be darkened
+    with an adjustable overlay. The output is ready for the normal
+    media playlist.
     """
     title = title.strip()
     body = body.strip()
@@ -238,6 +273,18 @@ def create_sign_slide(
 
     if normalized_alignment not in {"left", "center", "right"}:
         normalized_alignment = "center"
+
+    try:
+        normalized_overlay = int(overlay_opacity)
+    except (TypeError, ValueError) as error:
+        raise SlideGenerationError(
+            "Overlay opacity must be an integer."
+        ) from error
+
+    if normalized_overlay < 0 or normalized_overlay > 100:
+        raise SlideGenerationError(
+            "Overlay opacity must be between 0 and 100."
+        )
 
     background_color = _validate_color(
         background_color,
@@ -259,10 +306,10 @@ def create_sign_slide(
     filename = _safe_filename(title or "created-sign")
     output_path = output_directory / filename
 
-    image = Image.new(
-        "RGB",
-        (SLIDE_WIDTH, SLIDE_HEIGHT),
-        color=background_color,
+    image = _create_canvas(
+        background_color=background_color,
+        background_image_path=background_image_path,
+        overlay_opacity=normalized_overlay,
     )
 
     draw = ImageDraw.Draw(image)

@@ -135,6 +135,8 @@ def create_slide():
     ).strip().lower()
 
     duration_value = data.get("duration", 10)
+    background_media_id = data.get("background_media_id")
+    overlay_value = data.get("overlay_opacity", 35)
 
     if not title and not body:
         return jsonify({
@@ -173,6 +175,52 @@ def create_slide():
             "error": "Duration must be between 1 and 3600 seconds"
         }), 400
 
+    try:
+        overlay_opacity = int(overlay_value)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Overlay opacity must be an integer"
+        }), 400
+
+    if overlay_opacity < 0 or overlay_opacity > 100:
+        return jsonify({
+            "error": "Overlay opacity must be between 0 and 100"
+        }), 400
+
+    background_image_path = None
+
+    if background_media_id not in (None, ""):
+        try:
+            normalized_background_id = int(background_media_id)
+        except (TypeError, ValueError):
+            return jsonify({
+                "error": "Background media ID must be an integer"
+            }), 400
+
+        background_record = get_media_item(
+            normalized_background_id
+        )
+
+        if background_record is None:
+            return jsonify({
+                "error": "Selected background image was not found"
+            }), 404
+
+        if background_record["media_type"] != "image":
+            return jsonify({
+                "error": "Selected background must be image media"
+            }), 400
+
+        background_image_path = (
+            Path(MEDIA_DIR)
+            / background_record["filename"]
+        )
+
+        if not background_image_path.is_file():
+            return jsonify({
+                "error": "Selected background image file is missing"
+            }), 404
+
     generated_path = None
 
     try:
@@ -185,6 +233,8 @@ def create_slide():
             text_color=text_color,
             accent_color=accent_color,
             alignment=alignment,
+            background_image_path=background_image_path,
+            overlay_opacity=overlay_opacity,
         )
 
         record = create_media_item(
