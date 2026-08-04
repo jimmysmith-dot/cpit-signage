@@ -19,6 +19,10 @@ from app.services.slide_generator import (
     SlideGenerationError,
     create_sign_slide,
 )
+from app.services.sign_templates import (
+    get_sign_template,
+    get_sign_templates,
+)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -43,6 +47,28 @@ def serialize_media(record):
         "enabled": bool(record["enabled"]),
         "created_at": record["created_at"],
     }
+
+
+@api_bp.route("/sign-templates", methods=["GET"])
+def sign_template_list():
+    """Return all built-in sign templates."""
+    return jsonify(get_sign_templates())
+
+
+@api_bp.route(
+    "/sign-templates/<string:template_id>",
+    methods=["GET"],
+)
+def sign_template_detail(template_id):
+    """Return one built-in sign template."""
+    template = get_sign_template(template_id)
+
+    if template is None:
+        return jsonify({
+            "error": "Sign template not found"
+        }), 404
+
+    return jsonify(template)
 
 
 @api_bp.route("/media/reorder", methods=["PUT"])
