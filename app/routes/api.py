@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_from_directory
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
@@ -23,6 +23,13 @@ from app.services.sign_templates import (
     get_sign_template,
     get_sign_templates,
 )
+from app.services.logo_tools import (
+    LOGO_POSITIONS,
+    LogoProcessingError,
+    load_logo,
+    normalize_position,
+    normalize_width_percent,
+)
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -31,6 +38,16 @@ ALLOWED_IMAGE_EXTENSIONS = {
     ".jpeg",
     ".png",
     ".gif",
+    ".webp",
+}
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+LOGO_DIR = PROJECT_ROOT / "branding" / "logos"
+
+ALLOWED_LOGO_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
     ".webp",
 }
 
@@ -46,6 +63,15 @@ def serialize_media(record):
         "sort_order": record["sort_order"],
         "enabled": bool(record["enabled"]),
         "created_at": record["created_at"],
+    }
+
+
+def serialize_logo(path: Path):
+    """Convert a stored logo path into JSON-safe logo data."""
+    return {
+        "filename": path.name,
+        "url": f"/api/logos/{path.name}",
+        "size_bytes": path.stat().st_size,
     }
 
 
@@ -164,6 +190,17 @@ def create_slide():
     background_media_id = data.get("background_media_id")
     overlay_value = data.get("overlay_opacity", 35)
 
+    logo_filename = str(
+        data.get("logo_filename", "")
+    ).strip()
+
+    logo_position_value = str(
+        data.get("logo_position", "top-right")
+    ).strip().lower()
+
+    logo_width_value = data.get("logo_width_percent", 18)
+    logo_margin_value = data.get("logo_margin", 70)
+
     if not title and not body:
         return jsonify({
             "error": "A title or body message is required"
@@ -247,6 +284,52 @@ def create_slide():
                 "error": "Selected background image file is missing"
             }), 404
 
+    logo_path = None
+    logo_position = normalize_position(logo_position_value)
+
+    try:
+        logo_width_percent = normalize_width_percent(
+            logo_width_value
+        )
+    except LogoProcessingError as error:
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    try:
+        logo_margin = int(logo_margin_value)
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Logo margin must be an integer"
+        }), 400
+
+    if logo_margin < 0 or logo_margin > 300:
+        return jsonify({
+            "error": "Logo margin must be between 0 and 300 pixels"
+        }), 400
+
+    if logo_filename:
+        safe_logo_filename = secure_filename(logo_filename)
+
+        if safe_logo_filename != logo_filename:
+            return jsonify({
+                "error": "The selected logo filename is invalid"
+            }), 400
+
+        logo_path = LOGO_DIR / safe_logo_filename
+
+        if not logo_path.is_file():
+            return jsonify({
+                "error": "Selected logo was not found"
+            }), 404
+
+        try:
+            load_logo(logo_path)
+        except LogoProcessingError as error:
+            return jsonify({
+                "error": str(error)
+            }), 400
+
     generated_path = None
 
     try:
@@ -261,6 +344,10 @@ def create_slide():
             alignment=alignment,
             background_image_path=background_image_path,
             overlay_opacity=overlay_opacity,
+            logo_path=logo_path,
+            logo_position=logo_position,
+            logo_width_percent=logo_width_percent,
+            logo_margin=logo_margin,
         )
 
         record = create_media_item(
@@ -291,6 +378,167 @@ def create_slide():
             "error": "The slide could not be created",
             "details": str(error),
         }), 500
+
+
+@api_bp.route("/logos", methods=["GET"])
+def logo_list():
+    """Return all reusable branding logos."""
+    LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
+    logos = [
+        serialize_logo(path)
+        for path in sorted(
+            LOGO_DIR.iterdir(),
+            key=lambda item: item.name.lower(),
+        )
+        if (
+            path.is_file()
+            and path.suffix.lower() in ALLOWED_LOGO_EXTENSIONS
+        )
+    ]
+
+    return jsonify(logos)
+
+
+@api_bp.route("/logos", methods=["POST"])
+def logo_upload():
+    """Validate and store one reusable branding logo."""
+    if "file" not in request.files:
+        return jsonify({
+            "error": "No logo file was included in the request"
+        }), 400
+
+    uploaded_file = request.files["file"]
+
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({
+            "error": "No logo file was selected"
+        }), 400
+
+    original_name = secure_filename(uploaded_file.filename)
+
+    if not original_name:
+        return jsonify({
+            "error": "The logo filename is invalid"
+        }), 400
+
+    original_path = Path(original_name)
+    extension = original_path.suffix.lower()
+
+    if extension not in ALLOWED_LOGO_EXTENSIONS:
+        return jsonify({
+            "error": "Unsupported logo file type",
+            "allowed_extensions": sorted(
+                ALLOWED_LOGO_EXTENSIONS
+            ),
+        }), 400
+
+    LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
+    filename = (
+        f"{original_path.stem}-{uuid4().hex[:8]}"
+        f"{extension}"
+    )
+
+    final_path = LOGO_DIR / filename
+    temporary_path = LOGO_DIR / f".uploading-{uuid4().hex}"
+
+    try:
+        uploaded_file.save(temporary_path)
+
+        # load_logo performs format, dimensions, and image validation.
+        load_logo(temporary_path)
+
+        temporary_path.replace(final_path)
+
+        return jsonify(serialize_logo(final_path)), 201
+
+    except LogoProcessingError as error:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": str(error)
+        }), 400
+
+    except OSError as error:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The logo could not be stored",
+            "details": str(error),
+        }), 500
+
+    except Exception as error:
+        temporary_path.unlink(missing_ok=True)
+        final_path.unlink(missing_ok=True)
+
+        return jsonify({
+            "error": "The logo upload failed",
+            "details": str(error),
+        }), 500
+
+
+@api_bp.route(
+    "/logos/<path:filename>",
+    methods=["GET"],
+)
+def logo_file(filename):
+    """Serve one stored logo for previews and selection."""
+    safe_filename = secure_filename(filename)
+
+    if safe_filename != filename:
+        return jsonify({
+            "error": "Logo filename is invalid"
+        }), 400
+
+    logo_path = LOGO_DIR / safe_filename
+
+    if not logo_path.is_file():
+        return jsonify({
+            "error": "Logo not found"
+        }), 404
+
+    return send_from_directory(
+        LOGO_DIR,
+        safe_filename,
+        conditional=True,
+    )
+
+
+@api_bp.route(
+    "/logos/<path:filename>",
+    methods=["DELETE"],
+)
+def logo_delete(filename):
+    """Delete one reusable branding logo."""
+    safe_filename = secure_filename(filename)
+
+    if safe_filename != filename:
+        return jsonify({
+            "error": "Logo filename is invalid"
+        }), 400
+
+    logo_path = LOGO_DIR / safe_filename
+
+    if not logo_path.is_file():
+        return jsonify({
+            "error": "Logo not found"
+        }), 404
+
+    try:
+        logo_path.unlink()
+    except OSError as error:
+        return jsonify({
+            "error": "The logo could not be deleted",
+            "details": str(error),
+        }), 500
+
+    return jsonify({
+        "deleted": True,
+        "filename": safe_filename,
+    })
 
 
 @api_bp.route("/media", methods=["GET"])

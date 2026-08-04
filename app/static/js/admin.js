@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const reorderStatus = document.getElementById("reorder-status");
     const mediaCount = document.getElementById("media-count");
     const pageLoadedTime = document.getElementById("page-loaded-time");
+    const toastRegion = document.getElementById("toast-region");
 
     const uploadZone = document.getElementById("upload-zone");
     const fileInput = document.getElementById("media-files");
@@ -22,6 +23,30 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const applyTemplateButton = document.getElementById(
         "apply-template-button"
+    );
+
+    const logoUploadButton = document.getElementById(
+        "logo-upload-button"
+    );
+    const logoFileInput = document.getElementById(
+        "logo-file-input"
+    );
+    const logoGallery = document.getElementById("logo-gallery");
+    const logoSelectionStatus = document.getElementById(
+        "logo-selection-status"
+    );
+    const logoPosition = document.getElementById(
+        "sign-logo-position"
+    );
+    const logoSize = document.getElementById("sign-logo-size");
+    const logoSizeValue = document.getElementById(
+        "sign-logo-size-value"
+    );
+    const logoMargin = document.getElementById(
+        "sign-logo-margin"
+    );
+    const logoMarginValue = document.getElementById(
+        "sign-logo-margin-value"
     );
 
     const signTitle = document.getElementById("sign-title");
@@ -65,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "preview-background-image"
     );
     const previewOverlay = document.getElementById("preview-overlay");
+    const previewLogo = document.getElementById("preview-logo");
     const previewAccent = document.getElementById("preview-accent");
     const previewContent = document.getElementById("preview-content");
     const previewTitle = document.getElementById("preview-title");
@@ -73,6 +99,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const previewFooter = document.getElementById("preview-footer");
 
     let signTemplates = [];
+    let logoLibrary = [];
+    let selectedLogoFilename = "";
 
     const DEFAULT_SIGN = {
         title: "Lobby Remodel Update",
@@ -85,7 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
         duration: 10,
         backgroundMode: "color",
         backgroundMediaId: null,
-        overlayOpacity: 35
+        overlayOpacity: 35,
+        logoFilename: "",
+        logoPosition: "top-right",
+        logoWidthPercent: 18,
+        logoMargin: 70
     };
 
     if (pageLoadedTime) {
@@ -93,6 +125,39 @@ document.addEventListener("DOMContentLoaded", () => {
             hour: "numeric",
             minute: "2-digit"
         }).format(new Date());
+    }
+
+    function showToast(message, isError = false, timeout = 4200) {
+        if (!toastRegion || !message) {
+            return;
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast${isError ? " error" : ""}`;
+
+        const icon = document.createElement("span");
+        icon.className = "toast-icon";
+        icon.textContent = isError ? "!" : "✓";
+
+        const messageElement = document.createElement("span");
+        messageElement.className = "toast-message";
+        messageElement.textContent = message;
+
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "toast-close";
+        closeButton.setAttribute("aria-label", "Dismiss notification");
+        closeButton.textContent = "×";
+        closeButton.addEventListener("click", () => toast.remove());
+
+        toast.appendChild(icon);
+        toast.appendChild(messageElement);
+        toast.appendChild(closeButton);
+        toastRegion.appendChild(toast);
+
+        window.setTimeout(() => {
+            toast.remove();
+        }, timeout);
     }
 
     function setStatus(element, message, isError = false) {
@@ -237,10 +302,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         updateBackgroundControls();
 
-        setStatus(
-            createSignStatus,
-            `"${template.name}" template applied.`
-        );
+        const message = `"${template.name}" template applied.`;
+        setStatus(createSignStatus, message);
+        showToast(message);
     }
 
     async function loadSignTemplates() {
@@ -294,6 +358,325 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             setTemplateDescription(error.message, true);
+        }
+    }
+
+    function setLogoStatus(message, isError = false) {
+        if (!logoSelectionStatus) {
+            return;
+        }
+
+        logoSelectionStatus.textContent = message;
+        logoSelectionStatus.style.color = isError
+            ? "var(--danger)"
+            : "";
+    }
+
+    function getSelectedLogo() {
+        return logoLibrary.find(
+            (logo) => logo.filename === selectedLogoFilename
+        ) || null;
+    }
+
+    function selectLogo(filename) {
+        selectedLogoFilename = filename || "";
+
+        if (logoGallery) {
+            logoGallery.querySelectorAll(".logo-card").forEach(
+                (card) => {
+                    card.classList.toggle(
+                        "selected",
+                        card.dataset.filename === selectedLogoFilename
+                    );
+                }
+            );
+        }
+
+        const logo = getSelectedLogo();
+
+        setLogoStatus(
+            logo
+                ? `Selected logo: ${logo.filename}`
+                : "No logo selected."
+        );
+
+        updateSignPreview();
+    }
+
+    function renderLogoGallery() {
+        if (!logoGallery) {
+            return;
+        }
+
+        logoGallery.innerHTML = "";
+
+        const noLogoCard = document.createElement("button");
+        noLogoCard.type = "button";
+        noLogoCard.className = "logo-card";
+        noLogoCard.dataset.filename = "";
+        noLogoCard.innerHTML = `
+            <span class="logo-card-image-wrap">
+                <span style="font-weight:850;color:#637381;">
+                    No Logo
+                </span>
+            </span>
+            <span class="logo-card-name">No branding</span>
+        `;
+        noLogoCard.addEventListener(
+            "click",
+            () => selectLogo("")
+        );
+        logoGallery.appendChild(noLogoCard);
+
+        logoLibrary.forEach((logo) => {
+            const card = document.createElement("div");
+            card.className = "logo-card";
+            card.dataset.filename = logo.filename;
+            card.tabIndex = 0;
+            card.setAttribute("role", "button");
+            card.setAttribute(
+                "aria-label",
+                `Select logo ${logo.filename}`
+            );
+
+            const imageWrap = document.createElement("div");
+            imageWrap.className = "logo-card-image-wrap";
+
+            const image = document.createElement("img");
+            image.src = logo.url;
+            image.alt = "";
+            image.loading = "lazy";
+            imageWrap.appendChild(image);
+
+            const name = document.createElement("span");
+            name.className = "logo-card-name";
+            name.textContent = logo.filename;
+
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.className = "logo-delete-button";
+            deleteButton.textContent = "×";
+            deleteButton.title = `Delete ${logo.filename}`;
+            deleteButton.setAttribute(
+                "aria-label",
+                `Delete logo ${logo.filename}`
+            );
+
+            deleteButton.addEventListener(
+                "click",
+                async (event) => {
+                    event.stopPropagation();
+                    await deleteLogo(logo);
+                }
+            );
+
+            card.addEventListener(
+                "click",
+                () => selectLogo(logo.filename)
+            );
+
+            card.addEventListener(
+                "keydown",
+                (event) => {
+                    if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                    ) {
+                        event.preventDefault();
+                        selectLogo(logo.filename);
+                    }
+                }
+            );
+
+            card.appendChild(imageWrap);
+            card.appendChild(name);
+            card.appendChild(deleteButton);
+            logoGallery.appendChild(card);
+        });
+
+        selectLogo(selectedLogoFilename);
+    }
+
+    async function loadLogoLibrary() {
+        if (!logoGallery) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/logos");
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "Unable to load logo library."
+                );
+            }
+
+            if (!Array.isArray(result)) {
+                throw new Error(
+                    "The server returned an invalid logo list."
+                );
+            }
+
+            logoLibrary = result;
+
+            if (
+                selectedLogoFilename &&
+                !logoLibrary.some(
+                    (logo) =>
+                        logo.filename === selectedLogoFilename
+                )
+            ) {
+                selectedLogoFilename = "";
+            }
+
+            renderLogoGallery();
+
+        } catch (error) {
+            console.error(error);
+            logoGallery.innerHTML = `
+                <div class="logo-gallery-empty">
+                    ${error.message}
+                </div>
+            `;
+            setLogoStatus(error.message, true);
+        }
+    }
+
+    async function uploadLogo(file) {
+        if (!file) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        setLogoStatus(`Uploading ${file.name}...`);
+
+        if (logoUploadButton) {
+            logoUploadButton.disabled = true;
+            logoUploadButton.textContent = "Uploading...";
+        }
+
+        try {
+            const response = await fetch("/api/logos", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "The logo could not be uploaded."
+                );
+            }
+
+            selectedLogoFilename = result.filename;
+            await loadLogoLibrary();
+            const message =
+                `Logo uploaded and selected: ${result.filename}`;
+            setLogoStatus(message);
+            showToast(message);
+
+        } catch (error) {
+            console.error(error);
+            setLogoStatus(error.message, true);
+
+        } finally {
+            if (logoFileInput) {
+                logoFileInput.value = "";
+            }
+
+            if (logoUploadButton) {
+                logoUploadButton.disabled = false;
+                logoUploadButton.textContent = "Upload Logo";
+            }
+        }
+    }
+
+    async function deleteLogo(logo) {
+        if (
+            !window.confirm(
+                `Delete logo "${logo.filename}"?\n\n` +
+                "Generated signs that already contain this logo " +
+                "will not be affected."
+            )
+        ) {
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                `/api/logos/${encodeURIComponent(logo.filename)}`,
+                { method: "DELETE" }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "The logo could not be deleted."
+                );
+            }
+
+            if (selectedLogoFilename === logo.filename) {
+                selectedLogoFilename = "";
+            }
+
+            await loadLogoLibrary();
+            const message = `Deleted logo: ${logo.filename}`;
+            setLogoStatus(message);
+            showToast(message);
+
+        } catch (error) {
+            console.error(error);
+            setLogoStatus(error.message, true);
+        }
+    }
+
+    function updateLogoControlLabels() {
+        if (logoSizeValue && logoSize) {
+            logoSizeValue.textContent = `${logoSize.value}%`;
+        }
+
+        if (logoMarginValue && logoMargin) {
+            logoMarginValue.textContent = `${logoMargin.value}px`;
+        }
+    }
+
+    function positionPreviewLogo(values) {
+        if (!previewLogo) {
+            return;
+        }
+
+        previewLogo.style.left = "";
+        previewLogo.style.right = "";
+        previewLogo.style.top = "";
+        previewLogo.style.bottom = "";
+        previewLogo.style.transform = "";
+
+        const horizontalMargin =
+            (values.logoMargin / 1920) * 100;
+        const verticalMargin =
+            (values.logoMargin / 1080) * 100;
+
+        previewLogo.style.width =
+            `${values.logoWidthPercent}%`;
+
+        if (values.logoPosition.endsWith("left")) {
+            previewLogo.style.left = `${horizontalMargin}%`;
+        } else if (values.logoPosition.endsWith("right")) {
+            previewLogo.style.right = `${horizontalMargin}%`;
+        } else {
+            previewLogo.style.left = "50%";
+            previewLogo.style.transform = "translateX(-50%)";
+        }
+
+        if (values.logoPosition.startsWith("bottom")) {
+            previewLogo.style.bottom = `${verticalMargin}%`;
+        } else {
+            previewLogo.style.top = `${verticalMargin}%`;
         }
     }
 
@@ -382,7 +765,20 @@ document.addEventListener("DOMContentLoaded", () => {
             overlayOpacity:
                 overlayOpacity
                     ? Number.parseInt(overlayOpacity.value, 10)
-                    : DEFAULT_SIGN.overlayOpacity
+                    : DEFAULT_SIGN.overlayOpacity,
+            logoFilename: selectedLogoFilename,
+            logoUrl: getSelectedLogo()
+                ? getSelectedLogo().url
+                : "",
+            logoPosition: logoPosition
+                ? logoPosition.value
+                : DEFAULT_SIGN.logoPosition,
+            logoWidthPercent: logoSize
+                ? Number.parseInt(logoSize.value, 10)
+                : DEFAULT_SIGN.logoWidthPercent,
+            logoMargin: logoMargin
+                ? Number.parseInt(logoMargin.value, 10)
+                : DEFAULT_SIGN.logoMargin
         };
     }
 
@@ -442,6 +838,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 previewBackgroundImage.removeAttribute("src");
             }
         }
+        if (previewLogo) {
+            if (values.logoFilename && values.logoUrl) {
+                previewLogo.src = values.logoUrl;
+                previewLogo.style.display = "block";
+                positionPreviewLogo(values);
+            } else {
+                previewLogo.removeAttribute("src");
+                previewLogo.style.display = "none";
+            }
+        }
+
         previewAccent.style.backgroundColor = values.accentColor;
         previewDivider.style.backgroundColor = values.accentColor;
         previewContent.style.textAlign = values.alignment;
@@ -455,6 +862,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function resetSignDesigner() {
+        const hasContent =
+            signTitle.value.trim() ||
+            signBody.value.trim() ||
+            signFooter.value.trim() ||
+            selectedLogoFilename ||
+            (backgroundModeImage && backgroundModeImage.checked);
+
+        if (
+            hasContent &&
+            !window.confirm(
+                "Clear the current designer settings?"
+            )
+        ) {
+            return;
+        }
+
         signTitle.value = "";
         signBody.value = "";
         signFooter.value = "";
@@ -486,9 +909,30 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+        selectedLogoFilename = "";
+
+        if (logoPosition) {
+            logoPosition.value = DEFAULT_SIGN.logoPosition;
+        }
+
+        if (logoSize) {
+            logoSize.value = String(
+                DEFAULT_SIGN.logoWidthPercent
+            );
+        }
+
+        if (logoMargin) {
+            logoMargin.value = String(
+                DEFAULT_SIGN.logoMargin
+            );
+        }
+
+        updateLogoControlLabels();
+        renderLogoGallery();
         updateBackgroundControls();
         setStatus(createSignStatus, "");
         updateSignPreview();
+        showToast("Designer cleared.");
     }
 
     async function createSign() {
@@ -521,9 +965,29 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+        if (
+            !Number.isInteger(values.logoWidthPercent) ||
+            values.logoWidthPercent < 5 ||
+            values.logoWidthPercent > 40
+        ) {
+            throw new Error(
+                "Logo size must be between 5 and 40 percent."
+            );
+        }
+
+        if (
+            !Number.isInteger(values.logoMargin) ||
+            values.logoMargin < 0 ||
+            values.logoMargin > 300
+        ) {
+            throw new Error(
+                "Logo margin must be between 0 and 300 pixels."
+            );
+        }
+
         setStatus(createSignStatus, "Generating sign...");
         createSignButton.disabled = true;
-        createSignButton.textContent = "Creating...";
+        createSignButton.textContent = "Publishing...";
 
         const response = await fetch("/api/slides/create", {
             method: "POST",
@@ -541,7 +1005,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     values.backgroundMode === "image"
                         ? values.backgroundMediaId
                         : null,
-                overlay_opacity: values.overlayOpacity
+                overlay_opacity: values.overlayOpacity,
+                logo_filename: values.logoFilename,
+                logo_position: values.logoPosition,
+                logo_width_percent: values.logoWidthPercent,
+                logo_margin: values.logoMargin
             })
         });
 
@@ -556,8 +1024,11 @@ document.addEventListener("DOMContentLoaded", () => {
             throw new Error(result.error || "The sign could not be created.");
         }
 
-        setStatus(createSignStatus, "Sign created successfully. Refreshing...");
-        window.setTimeout(() => window.location.reload(), 900);
+        const message =
+            "Sign published successfully and added to the playlist.";
+        setStatus(createSignStatus, message);
+        showToast(message, false, 5000);
+        window.setTimeout(() => window.location.reload(), 1200);
     }
 
     if (createSignForm) {
@@ -612,6 +1083,45 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+        if (logoUploadButton && logoFileInput) {
+            logoUploadButton.addEventListener(
+                "click",
+                () => logoFileInput.click()
+            );
+
+            logoFileInput.addEventListener(
+                "change",
+                () => {
+                    const [file] = logoFileInput.files;
+                    uploadLogo(file);
+                }
+            );
+        }
+
+        [logoPosition, logoSize, logoMargin].forEach(
+            (element) => {
+                if (!element) {
+                    return;
+                }
+
+                element.addEventListener(
+                    "input",
+                    () => {
+                        updateLogoControlLabels();
+                        updateSignPreview();
+                    }
+                );
+
+                element.addEventListener(
+                    "change",
+                    () => {
+                        updateLogoControlLabels();
+                        updateSignPreview();
+                    }
+                );
+            }
+        );
+
         createSignForm.addEventListener("submit", async (event) => {
             event.preventDefault();
             try {
@@ -619,8 +1129,9 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (error) {
                 console.error(error);
                 setStatus(createSignStatus, error.message, true);
+                showToast(error.message, true);
                 createSignButton.disabled = false;
-                createSignButton.textContent = "Create Sign";
+                createSignButton.textContent = "Publish Sign";
             }
         });
     }
@@ -630,6 +1141,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     loadSignTemplates();
+    loadLogoLibrary();
+    updateLogoControlLabels();
     updateBackgroundControls();
 
     function preventFileNavigation(event) {
@@ -678,11 +1191,15 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let index = 0; index < files.length; index += 1) {
                 await uploadFile(files[index], index + 1, files.length);
             }
-            setStatus(uploadStatus, `${files.length} file(s) uploaded successfully.`);
-            window.setTimeout(() => window.location.reload(), 800);
+            const message =
+                `${files.length} file(s) uploaded successfully.`;
+            setStatus(uploadStatus, message);
+            showToast(message);
+            window.setTimeout(() => window.location.reload(), 900);
         } catch (error) {
             console.error(error);
             setStatus(uploadStatus, error.message, true);
+            showToast(error.message, true);
         } finally {
             fileInput.disabled = false;
             uploadZone.classList.remove("uploading");
@@ -777,6 +1294,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         updateVisibleOrderNumbers();
         setReorderStatus("Playlist order saved.");
+        showToast("Playlist order saved.");
     }
 
     if (mediaTableBody) {
@@ -838,6 +1356,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (error) {
                 console.error(error);
                 setReorderStatus(error.message, true);
+                showToast(error.message, true);
             }
         });
 
@@ -877,13 +1396,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (getOrderedMediaIds().length) {
                     await saveRowOrder();
-                    setReorderStatus(`"${filename}" was deleted successfully.`);
+                    const message =
+                        `"${filename}" was deleted successfully.`;
+                    setReorderStatus(message);
+                    showToast(message);
                 } else {
-                    setReorderStatus(`"${filename}" was deleted. The playlist is now empty.`);
+                    const message =
+                        `"${filename}" was deleted. The playlist is now empty.`;
+                    setReorderStatus(message);
+                    showToast(message);
                 }
             } catch (error) {
                 console.error(error);
                 setReorderStatus(error.message, true);
+                showToast(error.message, true);
                 button.disabled = false;
                 button.textContent = "Delete";
             }

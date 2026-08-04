@@ -63,6 +63,50 @@
         .template-description { min-height: 42px; margin: 10px 0 0; color: var(--muted); line-height: 1.45; }
         .template-loading { opacity: .65; }
         .studio-badge { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 8px; padding: 5px 9px; border-radius: 999px; background: #eaf3fb; color: #184b79; font-size: .76rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+        :focus-visible { outline: 3px solid rgba(31,95,153,.3); outline-offset: 2px; }
+        button, .button, input, select, textarea { transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease, transform .16s ease; }
+        button:active, .button:active { transform: translateY(1px); }
+        .workflow-strip { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-bottom: 18px; }
+        .workflow-step { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 9px 11px; border: 1px solid #d8e0e8; border-radius: 8px; background: #f8fafc; color: #526170; font-size: .78rem; font-weight: 800; }
+        .workflow-number { display: inline-grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 999px; background: #dceaf5; color: #184b79; font-size: .72rem; }
+        .section-heading { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin-top: 4px; padding-top: 6px; color: #344553; font-size: .83rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+        .section-heading::after { content: ""; height: 1px; flex: 1; background: #dfe6ec; }
+        .designer-actions { position: sticky; bottom: 0; z-index: 8; margin: 22px -22px -22px; padding: 16px 22px; border-top: 1px solid var(--panel-border); background: rgba(255,255,255,.96); backdrop-filter: blur(8px); box-shadow: 0 -8px 20px rgba(31,41,51,.06); }
+        .designer-actions button:first-child { min-width: 170px; min-height: 48px; font-size: 1rem; box-shadow: 0 7px 16px rgba(31,95,153,.24); }
+        .designer-actions-note { margin-left: auto; color: var(--muted); font-size: .82rem; font-weight: 700; }
+        .toast-region { position: fixed; z-index: 1000; right: 22px; bottom: 22px; display: grid; gap: 10px; width: min(390px,calc(100% - 44px)); pointer-events: none; }
+        .toast { display: flex; gap: 11px; align-items: flex-start; padding: 14px 16px; border: 1px solid #b8d6c1; border-radius: 9px; background: #eff9f1; color: #214e2f; box-shadow: 0 16px 38px rgba(31,41,51,.2); font-weight: 750; line-height: 1.4; animation: toast-in .18s ease-out; pointer-events: auto; }
+        .toast.error { border-color: #efb2ad; background: #fff1f0; color: #7a1b14; }
+        .toast-icon { flex: 0 0 auto; font-size: 1.05rem; }
+        .toast-message { flex: 1; }
+        .toast-close { min-width: auto; min-height: auto; padding: 0; background: transparent; color: inherit; font-size: 1.15rem; line-height: 1; opacity: .7; }
+        .toast-close:hover { background: transparent; opacity: 1; }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .logo-card.selected::after { content: "✓"; position: absolute; left: 7px; top: 7px; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 999px; background: var(--primary); color: #fff; font-size: .8rem; font-weight: 900; box-shadow: 0 2px 8px rgba(31,95,153,.28); }
+        .panel-header { background: linear-gradient(to bottom,#fff,#fbfcfd); }
+        .preview-frame::after { content: "LIVE"; position: absolute; z-index: 7; right: 10px; top: 10px; padding: 4px 7px; border-radius: 999px; background: rgba(20,50,74,.72); color: #fff; font-size: .62rem; font-weight: 900; letter-spacing: .08em; }
+        .branding-panel { padding: 16px; border: 1px solid #d8e0e8; border-radius: 8px; background: #f8fafc; }
+        .branding-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+        .branding-header h3 { margin: 0; font-size: 1rem; }
+        .branding-header p { margin: 5px 0 0; color: var(--muted); line-height: 1.4; }
+        .logo-upload-button { flex: 0 0 auto; }
+        #logo-file-input { display: none; }
+        .logo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
+        .logo-card { position: relative; min-height: 104px; padding: 9px; border: 2px solid transparent; border-radius: 8px; background: #fff; box-shadow: 0 1px 4px rgba(31,41,51,.08); cursor: pointer; }
+        .logo-card:hover { border-color: #9bbbd5; }
+        .logo-card.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(31,95,153,.14); }
+        .logo-card-image-wrap { display: flex; align-items: center; justify-content: center; height: 62px; padding: 5px; border-radius: 5px; background-image: linear-gradient(45deg,#e9edf1 25%,transparent 25%),linear-gradient(-45deg,#e9edf1 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e9edf1 75%),linear-gradient(-45deg,transparent 75%,#e9edf1 75%); background-position: 0 0,0 6px,6px -6px,-6px 0; background-size: 12px 12px; }
+        .logo-card img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .logo-card-name { display: block; margin-top: 7px; overflow: hidden; color: #344553; font-size: .72rem; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+        .logo-delete-button { position: absolute; top: 5px; right: 5px; min-width: 26px; min-height: 26px; padding: 2px 7px; border-radius: 999px; background: rgba(180,35,24,.92); font-size: .8rem; line-height: 1; }
+        .logo-delete-button:hover { background: var(--danger-hover); }
+        .logo-gallery-empty { grid-column: 1 / -1; padding: 20px 12px; border: 1px dashed #aeb9c4; border-radius: 7px; color: var(--muted); text-align: center; }
+        .logo-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 15px; }
+        .range-control { display: grid; grid-template-columns: 1fr 72px; gap: 10px; align-items: center; }
+        .range-control input[type="range"] { width: 100%; }
+        .range-value { padding: 9px 8px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; text-align: center; font-weight: 800; }
+        .logo-selection-status { min-height: 22px; margin: 10px 0 0; color: var(--muted); font-size: .86rem; font-weight: 700; }
+        .preview-logo { position: absolute; z-index: 4; display: none; max-height: 24%; object-fit: contain; pointer-events: none; }
         .color-control { display: grid; grid-template-columns: 58px 1fr; gap: 9px; align-items: center; }
         .color-control input[type="color"] { width: 58px; height: 42px; padding: 3px; border: 1px solid #b8c2cc; border-radius: 6px; background: #fff; }
         .background-mode { display: flex; flex-wrap: wrap; gap: 14px; padding: 10px 12px; border: 1px solid #d8e0e8; border-radius: 7px; background: #f8fafc; }
@@ -111,19 +155,19 @@
         .playlist-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-top: 1px solid var(--panel-border); background: #fbfcfd; }
         .playlist-actions { display: flex; flex-wrap: wrap; gap: 10px; }
         @media (max-width: 980px) { .status-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-grid { grid-template-columns: 1fr; } .preview-shell { position: static; } }
-        @media (max-width: 680px) { .app-header-inner, .status-strip, .page { width: min(100% - 20px,1440px); } .header-topline { flex-direction: column; } .status-strip { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } }
+        @media (max-width: 680px) { .app-header-inner, .status-strip, .page { width: min(100% - 20px,1440px); } .header-topline { flex-direction: column; } .status-strip { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .branding-header { flex-direction: column; } .logo-controls { grid-template-columns: 1fr; } .workflow-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-heading { grid-column: auto; } .designer-actions-note { width: 100%; margin-left: 0; } }
     </style>
 </head>
 <body>
 <header class="app-header">
     <div class="app-header-inner">
         <div class="header-topline">
-            <div class="brand"><h1>CPIT Signage Studio</h1><p>Create, upload, arrange, and publish display content.</p></div>
+            <div class="brand"><h1>CPIT Signage Studio</h1><p>Create polished, branded display content in minutes.</p></div>
             <div class="header-actions"><a class="button secondary" href="{{ url_for('player.index') }}" target="_blank" rel="noopener">Open Player</a></div>
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v0.5.3-dev</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.0-rc1</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
         <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items|length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
@@ -145,6 +189,13 @@
             </div>
             <div class="panel-body">
                 <form id="create-sign-form">
+                    <div class="workflow-strip" aria-label="Sign creation workflow">
+                        <div class="workflow-step"><span class="workflow-number">1</span>Choose Template</div>
+                        <div class="workflow-step"><span class="workflow-number">2</span>Add Branding</div>
+                        <div class="workflow-step"><span class="workflow-number">3</span>Write Message</div>
+                        <div class="workflow-step"><span class="workflow-number">4</span>Publish</div>
+                    </div>
+
                     <div class="form-grid">
                         <div class="form-field full">
                             <div
@@ -183,11 +234,136 @@
                                 </p>
                             </div>
                         </div>
+
+                        <div class="form-field full">
+                            <div id="branding-panel" class="branding-panel">
+                                <div class="branding-header">
+                                    <div>
+                                        <h3>Branding</h3>
+                                        <p>
+                                            Upload and reuse a customer logo
+                                            on generated signs.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        id="logo-upload-button"
+                                        class="secondary logo-upload-button"
+                                        type="button"
+                                    >
+                                        Upload Logo
+                                    </button>
+
+                                    <input
+                                        id="logo-file-input"
+                                        type="file"
+                                        accept=".png,.webp,.jpg,.jpeg"
+                                    >
+                                </div>
+
+                                <div
+                                    id="logo-gallery"
+                                    class="logo-gallery"
+                                    aria-live="polite"
+                                >
+                                    <div class="logo-gallery-empty">
+                                        Loading logo library...
+                                    </div>
+                                </div>
+
+                                <p
+                                    id="logo-selection-status"
+                                    class="logo-selection-status"
+                                >
+                                    No logo selected.
+                                </p>
+
+                                <div class="logo-controls">
+                                    <div class="form-field">
+                                        <label for="sign-logo-position">
+                                            Logo Position
+                                        </label>
+                                        <select id="sign-logo-position">
+                                            <option value="top-left">
+                                                Top Left
+                                            </option>
+                                            <option value="top-center">
+                                                Top Center
+                                            </option>
+                                            <option
+                                                value="top-right"
+                                                selected
+                                            >
+                                                Top Right
+                                            </option>
+                                            <option value="bottom-left">
+                                                Bottom Left
+                                            </option>
+                                            <option value="bottom-center">
+                                                Bottom Center
+                                            </option>
+                                            <option value="bottom-right">
+                                                Bottom Right
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="sign-logo-size">
+                                            Logo Size
+                                        </label>
+                                        <div class="range-control">
+                                            <input
+                                                id="sign-logo-size"
+                                                type="range"
+                                                min="5"
+                                                max="40"
+                                                step="1"
+                                                value="18"
+                                            >
+                                            <output
+                                                id="sign-logo-size-value"
+                                                class="range-value"
+                                                for="sign-logo-size"
+                                            >
+                                                18%
+                                            </output>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field full">
+                                        <label for="sign-logo-margin">
+                                            Edge Margin
+                                        </label>
+                                        <div class="range-control">
+                                            <input
+                                                id="sign-logo-margin"
+                                                type="range"
+                                                min="0"
+                                                max="200"
+                                                step="5"
+                                                value="70"
+                                            >
+                                            <output
+                                                id="sign-logo-margin-value"
+                                                class="range-value"
+                                                for="sign-logo-margin"
+                                            >
+                                                70px
+                                            </output>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-heading">Message</div>
                         <div class="form-field full"><label for="sign-title">Title</label><input id="sign-title" type="text" maxlength="250" placeholder="Lobby Remodel Update"></div>
                         <div class="form-field full"><label for="sign-body">Message</label><textarea id="sign-body" maxlength="2000" placeholder="Our lobby renovation begins soon. Thank you for your patience."></textarea></div>
                         <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><small>Optional closing line shown near the bottom.</small></div>
                         <div class="form-field"><label for="sign-alignment">Alignment</label><select id="sign-alignment"><option value="left">Left</option><option value="center" selected>Center</option><option value="right">Right</option></select></div>
                         <div class="form-field"><label for="sign-duration">Duration</label><input id="sign-duration" type="number" min="1" max="3600" value="10" required><small>Seconds on screen.</small></div>
+                        <div class="section-heading">Appearance</div>
                         <div class="form-field full">
                             <label>Background Type</label>
                             <div class="background-mode">
@@ -295,7 +471,11 @@
                         <div class="form-field"><label>Text</label><div class="color-control"><input id="sign-text-color" type="color" value="#ffffff"><input id="sign-text-hex" type="text" value="#FFFFFF" maxlength="7"></div></div>
                         <div class="form-field"><label>Accent</label><div class="color-control"><input id="sign-accent-color" type="color" value="#75b9e6"><input id="sign-accent-hex" type="text" value="#75B9E6" maxlength="7"></div></div>
                     </div>
-                    <div class="designer-actions"><button id="create-sign-button" type="submit">Create Sign</button><button id="reset-sign-button" class="secondary" type="button">Reset</button></div>
+                    <div class="designer-actions">
+                        <button id="create-sign-button" type="submit">Publish Sign</button>
+                        <button id="reset-sign-button" class="secondary" type="button">Clear Designer</button>
+                        <span class="designer-actions-note">The new sign will be added to the playlist automatically.</span>
+                    </div>
                     <div id="create-sign-status" class="inline-status" aria-live="polite"></div>
                 </form>
             </div>
@@ -313,6 +493,11 @@
                         id="preview-overlay"
                         class="preview-overlay"
                     ></div>
+                    <img
+                        id="preview-logo"
+                        class="preview-logo"
+                        alt="Selected logo preview"
+                    >
                     <div id="preview-accent" class="preview-accent"></div>
                     <div id="preview-content" class="preview-content"><h3 id="preview-title" class="preview-title">Lobby Remodel Update</h3><div id="preview-divider" class="preview-divider"></div><p id="preview-body" class="preview-body">Our lobby renovation begins soon. Thank you for your patience.</p></div>
                     <p id="preview-footer" class="preview-footer">We appreciate you staying with us.</p>
@@ -347,6 +532,7 @@
         </section>
     </form>
 </main>
+<div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
 </body>
 </html>

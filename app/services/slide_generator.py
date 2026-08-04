@@ -12,6 +12,10 @@ from app.services.image_tools import (
     ImageProcessingError,
     prepare_background,
 )
+from app.services.logo_tools import (
+    LogoProcessingError,
+    apply_logo,
+)
 
 SLIDE_WIDTH = 1920
 SLIDE_HEIGHT = 1080
@@ -251,14 +255,19 @@ def create_sign_slide(
     alignment: str = "center",
     background_image_path: Path | None = None,
     overlay_opacity: int = DEFAULT_OVERLAY_OPACITY,
+    logo_path: Path | None = None,
+    logo_position: str = "top-right",
+    logo_width_percent: int = 18,
+    logo_margin: int = 70,
 ) -> Path:
     """
     Generate a 1920x1080 PNG sign and return its path.
 
     The background may be a solid color or a source image. Background
     images are center-cropped to fill the slide and can be darkened
-    with an adjustable overlay. The output is ready for the normal
-    media playlist.
+    with an adjustable overlay. An optional logo may be composited
+    before text is drawn. The output is ready for the normal media
+    playlist.
     """
     title = title.strip()
     body = body.strip()
@@ -311,6 +320,18 @@ def create_sign_slide(
         background_image_path=background_image_path,
         overlay_opacity=normalized_overlay,
     )
+
+    if logo_path is not None:
+        try:
+            image = apply_logo(
+                image,
+                logo_path=logo_path,
+                position=logo_position,
+                width_percent=logo_width_percent,
+                margin=logo_margin,
+            )
+        except LogoProcessingError as error:
+            raise SlideGenerationError(str(error)) from error
 
     draw = ImageDraw.Draw(image)
 
@@ -450,7 +471,7 @@ def create_sign_slide(
         )
 
     try:
-        image.save(
+        image.convert("RGB").save(
             output_path,
             format="PNG",
             optimize=True,
