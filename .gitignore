@@ -55,3 +55,14 @@ backups/
 *.old
 *.bak
 *.1
+
+# Runtime signage content
+media/*
+!media/.gitkeep
+
+branding/logos/*
+!branding/logos/.gitkeep
+
+config/signage.db
+logs/
+dist/
