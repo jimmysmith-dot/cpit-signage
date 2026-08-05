@@ -7,6 +7,14 @@ MEDIA_DIR = BASE_DIR / "media"
 
 SUPPORTED_IMAGES = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
+ASSET_TYPE_PLAYLIST = "playlist"
+ASSET_TYPE_BACKGROUND = "background"
+
+SUPPORTED_ASSET_TYPES = {
+    ASSET_TYPE_PLAYLIST,
+    ASSET_TYPE_BACKGROUND,
+}
+
 
 def get_connection():
     """Open a connection with rows accessible by column name."""
@@ -19,7 +27,13 @@ def get_connection():
 
 
 def initialize_database():
-    """Create the database tables if they do not already exist."""
+    """
+    Create the database and apply compatible schema migrations.
+
+    Existing installations receive the asset_type column automatically.
+    Existing media defaults to playlist so current playback behavior is
+    preserved during the Step 2A migration.
+    """
     with get_connection() as connection:
         connection.execute(
             """
@@ -27,12 +41,44 @@ def initialize_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 filename TEXT NOT NULL UNIQUE,
                 media_type TEXT NOT NULL DEFAULT 'image',
+                asset_type TEXT NOT NULL DEFAULT 'playlist',
                 duration INTEGER NOT NULL DEFAULT 10,
                 sort_order INTEGER NOT NULL DEFAULT 0,
                 enabled INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
             """
+        )
+
+        columns = {
+            row["name"]
+            for row in connection.execute(
+                "PRAGMA table_info(media)"
+            ).fetchall()
+        }
+
+        if "asset_type" not in columns:
+            connection.execute(
+                """
+                ALTER TABLE media
+                ADD COLUMN asset_type TEXT NOT NULL DEFAULT 'playlist'
+                """
+            )
+
+        connection.execute(
+            """
+            UPDATE media
+            SET asset_type = ?
+            WHERE
+                asset_type IS NULL
+                OR TRIM(asset_type) = ''
+                OR asset_type NOT IN (?, ?)
+            """,
+            (
+                ASSET_TYPE_PLAYLIST,
+                ASSET_TYPE_PLAYLIST,
+                ASSET_TYPE_BACKGROUND,
+            ),
         )
 
 
@@ -55,17 +101,23 @@ def import_existing_media():
         for offset, file in enumerate(files, start=1):
             connection.execute(
                 """
-                INSERT OR IGNORE INTO media
-                    (filename, media_type, duration, sort_order, enabled)
+                INSERT OR IGNORE INTO media (
+                    filename,
+                    media_type,
+                    asset_type,
+                    duration,
+                    sort_order,
+                    enabled
+                )
                 VALUES
-                    (?, 'image', 10, ?, 1)
+                    (?, 'image', 'playlist', 10, ?, 1)
                 """,
                 (file.name, existing_count + offset),
             )
 
 
 def get_enabled_slides():
-    """Return enabled media in playlist order."""
+    """Return enabled playlist media in playback order."""
     initialize_database()
 
     with get_connection() as connection:
@@ -75,13 +127,18 @@ def get_enabled_slides():
                 id,
                 filename,
                 media_type,
+                asset_type,
                 duration,
                 sort_order
             FROM media
-            WHERE enabled = 1
+            WHERE
+                enabled = 1
+                AND asset_type = ?
             ORDER BY sort_order ASC, id ASC
-            """
+            """,
+            (ASSET_TYPE_PLAYLIST,),
         ).fetchall()
+
 
 def get_all_media():
     """Return all media records, including disabled items."""
@@ -94,6 +151,7 @@ def get_all_media():
                 id,
                 filename,
                 media_type,
+                asset_type,
                 duration,
                 sort_order,
                 enabled,
@@ -102,6 +160,64 @@ def get_all_media():
             ORDER BY sort_order ASC, id ASC
             """
         ).fetchall()
+
+
+def get_media_by_asset_type(asset_type: str):
+    """Return all media records for one supported asset type."""
+    initialize_database()
+
+    normalized_asset_type = str(asset_type).strip().lower()
+
+    if normalized_asset_type not in SUPPORTED_ASSET_TYPES:
+        raise ValueError(
+            "Asset type must be playlist or background"
+        )
+
+    with get_connection() as connection:
+        return connection.execute(
+            """
+            SELECT
+                id,
+                filename,
+                media_type,
+                asset_type,
+                duration,
+                sort_order,
+                enabled,
+                created_at
+            FROM media
+            WHERE asset_type = ?
+            ORDER BY sort_order ASC, id ASC
+            """,
+            (normalized_asset_type,),
+        ).fetchall()
+
+
+def update_media_asset_type(
+    media_id: int,
+    asset_type: str,
+):
+    """Move one media item between supported asset libraries."""
+    initialize_database()
+
+    normalized_asset_type = str(asset_type).strip().lower()
+
+    if normalized_asset_type not in SUPPORTED_ASSET_TYPES:
+        raise ValueError(
+            "Asset type must be playlist or background"
+        )
+
+    with get_connection() as connection:
+        cursor = connection.execute(
+            """
+            UPDATE media
+            SET asset_type = ?
+            WHERE id = ?
+            """,
+            (normalized_asset_type, media_id),
+        )
+
+        return cursor.rowcount > 0
 
 
 def update_media_item(
@@ -147,6 +263,7 @@ def get_media_item(media_id: int):
                 id,
                 filename,
                 media_type,
+                asset_type,
                 duration,
                 sort_order,
                 enabled,
@@ -174,6 +291,7 @@ def delete_media_item(media_id: int):
 def create_media_item(
     filename: str,
     media_type: str = "image",
+    asset_type: str = ASSET_TYPE_PLAYLIST,
     duration: int = 10,
     enabled: bool = True,
 ):
@@ -182,6 +300,13 @@ def create_media_item(
 
     duration = max(1, min(int(duration), 3600))
     enabled_value = 1 if enabled else 0
+
+    normalized_asset_type = str(asset_type).strip().lower()
+
+    if normalized_asset_type not in SUPPORTED_ASSET_TYPES:
+        raise ValueError(
+            "Asset type must be playlist or background"
+        )
 
     with get_connection() as connection:
         next_sort_order = connection.execute(
@@ -196,15 +321,17 @@ def create_media_item(
             INSERT INTO media (
                 filename,
                 media_type,
+                asset_type,
                 duration,
                 sort_order,
                 enabled
             )
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 filename,
                 media_type,
+                normalized_asset_type,
                 duration,
                 next_sort_order,
                 enabled_value,
@@ -219,6 +346,7 @@ def create_media_item(
                 id,
                 filename,
                 media_type,
+                asset_type,
                 duration,
                 sort_order,
                 enabled,
@@ -238,7 +366,12 @@ def reorder_media_items(media_ids):
         existing_ids = {
             row["id"]
             for row in connection.execute(
-                "SELECT id FROM media"
+                """
+                SELECT id
+                FROM media
+                WHERE asset_type = ?
+                """,
+                (ASSET_TYPE_PLAYLIST,),
             ).fetchall()
         }
 
@@ -249,7 +382,7 @@ def reorder_media_items(media_ids):
 
         if set(requested_ids) != existing_ids:
             raise ValueError(
-                "The reorder list must include every media item exactly once"
+                "The reorder list must include every playlist item exactly once"
             )
 
         for sort_order, media_id in enumerate(requested_ids, start=1):

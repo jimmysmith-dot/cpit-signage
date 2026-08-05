@@ -42,6 +42,28 @@
         .status-value { display: block; margin-top: 7px; font-size: 1.04rem; font-weight: 800; }
         .online-dot { display: inline-block; width: 10px; height: 10px; margin-right: 7px; border-radius: 50%; background: #5dd27a; }
         .page { padding: 28px 0 50px; }
+        .workspace-nav-shell { position: sticky; top: 0; z-index: 40; margin-bottom: 22px; padding: 10px; border: 1px solid var(--panel-border); border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 24px rgba(31,41,51,.09); backdrop-filter: blur(10px); }
+        .workspace-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+        .workspace-tab { position: relative; min-height: 54px; padding: 10px 14px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #526170; text-align: left; box-shadow: none; }
+        .workspace-tab:hover { background: #edf5fc; color: var(--primary); }
+        .workspace-tab[aria-selected="true"] { border-color: #a9c6de; background: #eaf3fb; color: #184b79; box-shadow: inset 0 -3px 0 var(--primary); }
+        .workspace-tab-title { display: block; font-size: .96rem; font-weight: 900; }
+        .workspace-tab-description { display: block; margin-top: 3px; font-size: .74rem; font-weight: 650; opacity: .78; }
+        .workspace-tab-count { position: absolute; top: 8px; right: 9px; display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: 999px; background: #dce8f2; color: #344553; font-size: .72rem; font-weight: 900; }
+        .workspace-tab[aria-selected="true"] .workspace-tab-count { background: var(--primary); color: #fff; }
+        .tab-panel[hidden] { display: none !important; }
+        .tab-panel { animation: workspace-in .16s ease-out; }
+        @keyframes workspace-in { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .workspace-heading { margin-bottom: 18px; }
+        .workspace-heading h2 { margin: 0; font-size: 1.45rem; }
+        .workspace-heading p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }
+        .upload-workspace-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; align-items: start; }
+        .upload-workspace-grid .panel { height: 100%; }
+        .upload-logo-zone { display: flex; flex-direction: column; justify-content: center; min-height: 190px; padding: 28px 20px; border: 2px dashed #8da2b5; border-radius: 8px; background: #f8fafc; text-align: center; }
+        .upload-logo-zone p { margin: 0; }
+        .upload-logo-zone .upload-help { margin: 7px 0 18px; }
+        .studio-logo-upload-link { flex: 0 0 auto; }
+        .workspace-footer-note { margin-top: 15px; color: var(--muted); font-size: .86rem; line-height: 1.45; }
         .notice { margin-bottom: 20px; padding: 13px 16px; border: 1px solid #86b995; border-radius: 8px; background: #e8f5eb; color: #214e2f; font-weight: 700; }
         .section-grid { display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.25fr); gap: 22px; align-items: start; }
         .panel { overflow: hidden; border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--panel-bg); box-shadow: var(--shadow); }
@@ -154,8 +176,8 @@
         .empty { padding: 42px 20px; color: var(--muted); text-align: center; }
         .playlist-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 20px; border-top: 1px solid var(--panel-border); background: #fbfcfd; }
         .playlist-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-        @media (max-width: 980px) { .status-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-grid { grid-template-columns: 1fr; } .preview-shell { position: static; } }
-        @media (max-width: 680px) { .app-header-inner, .status-strip, .page { width: min(100% - 20px,1440px); } .header-topline { flex-direction: column; } .status-strip { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .branding-header { flex-direction: column; } .logo-controls { grid-template-columns: 1fr; } .workflow-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-heading { grid-column: auto; } .designer-actions-note { width: 100%; margin-left: 0; } }
+        @media (max-width: 980px) { .status-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-grid { grid-template-columns: 1fr; } .preview-shell { position: static; } .upload-workspace-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 680px) { .app-header-inner, .status-strip, .page { width: min(100% - 20px,1440px); } .header-topline { flex-direction: column; } .status-strip { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } .form-field.full { grid-column: auto; } .branding-header { flex-direction: column; } .logo-controls { grid-template-columns: 1fr; } .workflow-strip { grid-template-columns: repeat(2,minmax(0,1fr)); } .section-heading { grid-column: auto; } .designer-actions-note { width: 100%; margin-left: 0; } .workspace-tabs { grid-template-columns: 1fr; } .workspace-tab-description { display: none; } .workspace-nav-shell { position: static; } }
     </style>
 </head>
 <body>
@@ -167,15 +189,71 @@
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.0-rc1</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.0</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
-        <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items|length }}</span></div>
+        <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items | selectattr('asset_type', 'equalto', 'playlist') | list | length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
     </div>
 </header>
 <main class="page">
     {% if saved %}<div class="notice">Playlist settings were saved successfully.</div>{% endif %}
-    <div class="section-grid">
+
+    <nav class="workspace-nav-shell" aria-label="Administration workspaces">
+        <div class="workspace-tabs" role="tablist" aria-label="CPIT Signage administration">
+            <button
+                id="tab-studio"
+                class="workspace-tab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-studio"
+                data-workspace="studio"
+            >
+                <span class="workspace-tab-title">Studio</span>
+                <span class="workspace-tab-description">Create and publish signs</span>
+            </button>
+
+            <button
+                id="tab-upload"
+                class="workspace-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-upload"
+                data-workspace="upload"
+            >
+                <span class="workspace-tab-title">Upload</span>
+                <span class="workspace-tab-description">Add media and logos</span>
+            </button>
+
+            <button
+                id="tab-playlist"
+                class="workspace-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-playlist"
+                data-workspace="playlist"
+            >
+                <span class="workspace-tab-title">Playlist</span>
+                <span class="workspace-tab-description">Order and control playback</span>
+                <span id="playlist-tab-count" class="workspace-tab-count">{{ media_items | selectattr('asset_type', 'equalto', 'playlist') | list | length }}</span>
+            </button>
+        </div>
+    </nav>
+    <section
+        id="panel-studio"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-studio"
+        data-workspace-panel="studio"
+    >
+        <div class="workspace-heading">
+            <h2>Studio</h2>
+            <p>Create branded message slides and preview them before publishing.</p>
+        </div>
+
+        <div class="section-grid">
         <section class="panel">
             <div class="panel-header">
                 <div>
@@ -247,18 +325,12 @@
                                     </div>
 
                                     <button
-                                        id="logo-upload-button"
-                                        class="secondary logo-upload-button"
+                                        id="open-logo-upload-tab"
+                                        class="secondary studio-logo-upload-link"
                                         type="button"
                                     >
-                                        Upload Logo
+                                        Manage Logos
                                     </button>
-
-                                    <input
-                                        id="logo-file-input"
-                                        type="file"
-                                        accept=".png,.webp,.jpg,.jpeg"
-                                    >
                                 </div>
 
                                 <div
@@ -419,18 +491,20 @@
                             </label>
                             <select id="sign-background-media">
                                 <option value="">
-                                    Select an image from the media library
+                                    Select an image from the background library
                                 </option>
                                 {% for item in media_items %}
-                                    <option
-                                        value="{{ item['id'] }}"
-                                        data-url="{{ url_for(
-                                            'player.media',
-                                            filename=item['filename']
-                                        ) }}"
-                                    >
-                                        {{ item['filename'] }}
-                                    </option>
+                                    {% if item['asset_type'] == 'background' %}
+                                        <option
+                                            value="{{ item['id'] }}"
+                                            data-url="{{ url_for(
+                                                'player.media',
+                                                filename=item['filename']
+                                            ) }}"
+                                        >
+                                            {{ item['filename'] }}
+                                        </option>
+                                    {% endif %}
                                 {% endfor %}
                             </select>
                             <small>
@@ -505,17 +579,151 @@
                 <p class="preview-note">The server renders the final slide as a full-size 1920 × 1080 PNG.</p>
             </div>
         </section>
-    </div>
-    <section class="panel library-panel">
-        <div class="panel-header"><div><h2>Upload Images</h2><p>Add renderings, photographs, announcements, or promotional graphics.</p></div></div>
-        <div class="panel-body"><div id="upload-zone" class="upload-zone" role="button" tabindex="0"><p class="upload-title">Drop images here</p><p class="upload-help">or click to browse</p></div><input id="media-files" type="file" accept=".jpg,.jpeg,.png,.gif,.webp" multiple><div id="upload-status" class="inline-status" aria-live="polite"></div></div>
+        </div>
     </section>
-    <form method="post" action="{{ url_for('admin.save') }}">
+
+    <section
+        id="panel-upload"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-upload"
+        data-workspace-panel="upload"
+        hidden
+    >
+        <div class="workspace-heading">
+            <h2>Upload</h2>
+            <p>Add playlist images and reusable branding assets from one workspace.</p>
+        </div>
+
+        <div class="upload-workspace-grid">
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Playlist Images</h2>
+                        <p>Upload finished graphics that should play on screen.</p>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div
+                        id="playlist-upload-zone"
+                        class="upload-zone"
+                        role="button"
+                        tabindex="0"
+                    >
+                        <p class="upload-title">Drop playlist images here</p>
+                        <p class="upload-help">or click to browse</p>
+                    </div>
+                    <input
+                        id="playlist-media-files"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp"
+                        multiple
+                    >
+                    <div
+                        id="playlist-upload-status"
+                        class="inline-status"
+                        aria-live="polite"
+                    ></div>
+                    <p class="workspace-footer-note">
+                        Playlist images appear in playback controls and
+                        are sent to the player.
+                    </p>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Background Library</h2>
+                        <p>Upload reusable images for the Studio designer.</p>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div
+                        id="background-upload-zone"
+                        class="upload-zone"
+                        role="button"
+                        tabindex="0"
+                    >
+                        <p class="upload-title">Drop backgrounds here</p>
+                        <p class="upload-help">or click to browse</p>
+                    </div>
+                    <input
+                        id="background-media-files"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp"
+                        multiple
+                    >
+                    <div
+                        id="background-upload-status"
+                        class="inline-status"
+                        aria-live="polite"
+                    ></div>
+                    <p class="workspace-footer-note">
+                        Backgrounds remain outside the playlist and only
+                        appear in Studio's background selector.
+                    </p>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Logo Library</h2>
+                        <p>Upload reusable transparent or standard customer logos.</p>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="upload-logo-zone">
+                        <p class="upload-title">Add a reusable logo</p>
+                        <p class="upload-help">PNG, WebP, JPEG, or JPG</p>
+                        <button
+                            id="logo-upload-button"
+                            type="button"
+                        >
+                            Choose Logo File
+                        </button>
+                        <input
+                            id="logo-file-input"
+                            type="file"
+                            accept=".png,.webp,.jpg,.jpeg"
+                        >
+                        <div
+                            id="logo-upload-status"
+                            class="inline-status"
+                            aria-live="polite"
+                        ></div>
+                    </div>
+                    <p class="workspace-footer-note">
+                        After upload, return to Studio to select, size,
+                        and position the logo.
+                    </p>
+                </div>
+            </section>
+        </div>
+        </div>
+    </section>
+
+    <section
+        id="panel-playlist"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-playlist"
+        data-workspace-panel="playlist"
+        hidden
+    >
+        <div class="workspace-heading">
+            <h2>Playlist</h2>
+            <p>Arrange playback order, duration, visibility, and media deletion.</p>
+        </div>
+
+        <form method="post" action="{{ url_for('admin.save') }}">
         <section class="panel library-panel">
             <div class="panel-header"><div><h2>Playlist</h2><p>Drag by the handle to reorder. Adjust duration and visibility, then save.</p></div></div>
-            {% if media_items %}
+            {% set playlist_items = media_items | selectattr('asset_type', 'equalto', 'playlist') | list %}
+            {% if playlist_items %}
             <div class="table-wrap"><table><thead><tr><th>Move</th><th>Preview</th><th>Filename</th><th>Duration</th><th>Order</th><th>Enabled</th><th>Actions</th></tr></thead><tbody id="media-table-body">
-            {% for item in media_items %}
+            {% for item in playlist_items %}
                 <tr class="media-row" data-media-id="{{ item['id'] }}">
                     <td class="drag-handle" title="Drag to reorder" draggable="true">☰</td>
                     <td><img class="thumbnail" src="{{ url_for('player.media', filename=item['filename']) }}" alt="" draggable="false"></td>
@@ -527,10 +735,11 @@
                 </tr>
             {% endfor %}
             </tbody></table></div>
-            {% else %}<div class="empty">No media records are available.</div>{% endif %}
+            {% else %}<div class="empty">No playlist items are available.</div>{% endif %}
             <div class="playlist-footer"><div id="reorder-status" class="reorder-message" aria-live="polite"></div><div class="playlist-actions"><button type="submit">Save Playlist</button><a class="button secondary" href="{{ url_for('player.index') }}" target="_blank" rel="noopener">Open Player</a></div></div>
         </section>
-    </form>
+        </form>
+    </section>
 </main>
 <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>

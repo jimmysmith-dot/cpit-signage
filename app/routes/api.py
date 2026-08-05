@@ -6,11 +6,15 @@ from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
 from app.services.database import (
+    ASSET_TYPE_BACKGROUND,
+    ASSET_TYPE_PLAYLIST,
     MEDIA_DIR,
+    SUPPORTED_ASSET_TYPES,
     create_media_item,
     delete_media_item,
     get_all_media,
     get_enabled_slides,
+    get_media_by_asset_type,
     get_media_item,
     reorder_media_items,
     update_media_item,
@@ -58,6 +62,7 @@ def serialize_media(record):
         "id": record["id"],
         "filename": record["filename"],
         "type": record["media_type"],
+        "asset_type": record["asset_type"],
         "url": f"/media/{record['filename']}",
         "duration": record["duration"],
         "sort_order": record["sort_order"],
@@ -131,7 +136,9 @@ def media_reorder():
             "error": str(error)
         }), 400
 
-    records = get_all_media()
+    records = get_media_by_asset_type(
+        ASSET_TYPE_PLAYLIST
+    )
 
     return jsonify([
         serialize_media(record)
@@ -274,6 +281,17 @@ def create_slide():
                 "error": "Selected background must be image media"
             }), 400
 
+        if (
+            background_record["asset_type"]
+            != ASSET_TYPE_BACKGROUND
+        ):
+            return jsonify({
+                "error": (
+                    "Selected media is not in the "
+                    "background library"
+                )
+            }), 400
+
         background_image_path = (
             Path(MEDIA_DIR)
             / background_record["filename"]
@@ -353,6 +371,7 @@ def create_slide():
         record = create_media_item(
             filename=generated_path.name,
             media_type="image",
+            asset_type=ASSET_TYPE_PLAYLIST,
             duration=duration,
             enabled=True,
         )
@@ -543,7 +562,22 @@ def logo_delete(filename):
 
 @api_bp.route("/media", methods=["GET"])
 def media_list():
-    records = get_all_media()
+    asset_type = str(
+        request.args.get("asset_type", "")
+    ).strip().lower()
+
+    if asset_type:
+        if asset_type not in SUPPORTED_ASSET_TYPES:
+            return jsonify({
+                "error": "Asset type must be playlist or background",
+                "allowed_asset_types": sorted(
+                    SUPPORTED_ASSET_TYPES
+                ),
+            }), 400
+
+        records = get_media_by_asset_type(asset_type)
+    else:
+        records = get_all_media()
 
     return jsonify([
         serialize_media(record)
@@ -575,6 +609,21 @@ def media_upload():
     original_path = Path(original_name)
     extension = original_path.suffix.lower()
 
+    asset_type = str(
+        request.form.get(
+            "asset_type",
+            ASSET_TYPE_PLAYLIST,
+        )
+    ).strip().lower()
+
+    if asset_type not in SUPPORTED_ASSET_TYPES:
+        return jsonify({
+            "error": "Asset type must be playlist or background",
+            "allowed_asset_types": sorted(
+                SUPPORTED_ASSET_TYPES
+            ),
+        }), 400
+
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
         return jsonify({
             "error": "Unsupported file type",
@@ -605,6 +654,7 @@ def media_upload():
         record = create_media_item(
             filename=filename,
             media_type="image",
+            asset_type=asset_type,
             duration=10,
             enabled=True,
         )

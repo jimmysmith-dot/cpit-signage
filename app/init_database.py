@@ -11,7 +11,13 @@ def main():
     with get_connection() as connection:
         rows = connection.execute(
             """
-            SELECT id, filename, duration, sort_order, enabled
+            SELECT
+                id,
+                filename,
+                asset_type,
+                duration,
+                sort_order,
+                enabled
             FROM media
             ORDER BY sort_order, id
             """
@@ -23,7 +29,8 @@ def main():
     for row in rows:
         print(
             f"{row['id']}: {row['filename']} "
-            f"(duration={row['duration']}, "
+            f"(asset_type={row['asset_type']}, "
+            f"duration={row['duration']}, "
             f"order={row['sort_order']}, "
             f"enabled={row['enabled']})"
         )

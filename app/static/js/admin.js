@@ -7,9 +7,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageLoadedTime = document.getElementById("page-loaded-time");
     const toastRegion = document.getElementById("toast-region");
 
-    const uploadZone = document.getElementById("upload-zone");
-    const fileInput = document.getElementById("media-files");
-    const uploadStatus = document.getElementById("upload-status");
+    const workspaceTabs = Array.from(
+        document.querySelectorAll("[data-workspace]")
+    );
+    const workspacePanels = Array.from(
+        document.querySelectorAll("[data-workspace-panel]")
+    );
+    const playlistTabCount = document.getElementById(
+        "playlist-tab-count"
+    );
+    const openLogoUploadTab = document.getElementById(
+        "open-logo-upload-tab"
+    );
+    const logoUploadStatus = document.getElementById(
+        "logo-upload-status"
+    );
+
+    const playlistUploadZone = document.getElementById(
+        "playlist-upload-zone"
+    );
+    const playlistFileInput = document.getElementById(
+        "playlist-media-files"
+    );
+    const playlistUploadStatus = document.getElementById(
+        "playlist-upload-status"
+    );
+
+    const backgroundUploadZone = document.getElementById(
+        "background-upload-zone"
+    );
+    const backgroundFileInput = document.getElementById(
+        "background-media-files"
+    );
+    const backgroundUploadStatus = document.getElementById(
+        "background-upload-status"
+    );
 
     const createSignForm = document.getElementById("create-sign-form");
     const createSignButton = document.getElementById("create-sign-button");
@@ -125,6 +157,179 @@ document.addEventListener("DOMContentLoaded", () => {
             hour: "numeric",
             minute: "2-digit"
         }).format(new Date());
+    }
+
+    const WORKSPACE_STORAGE_KEY = "cpit-signage-active-workspace";
+    const VALID_WORKSPACES = new Set([
+        "studio",
+        "upload",
+        "playlist"
+    ]);
+
+    function workspaceFromHash() {
+        const candidate = window.location.hash
+            .replace(/^#/, "")
+            .trim()
+            .toLowerCase();
+
+        return VALID_WORKSPACES.has(candidate)
+            ? candidate
+            : null;
+    }
+
+    function getInitialWorkspace() {
+        const hashWorkspace = workspaceFromHash();
+
+        if (hashWorkspace) {
+            return hashWorkspace;
+        }
+
+        try {
+            const savedWorkspace = window.localStorage.getItem(
+                WORKSPACE_STORAGE_KEY
+            );
+
+            if (VALID_WORKSPACES.has(savedWorkspace)) {
+                return savedWorkspace;
+            }
+        } catch (error) {
+            console.debug(
+                "Workspace preference could not be read.",
+                error
+            );
+        }
+
+        return "studio";
+    }
+
+    function activateWorkspace(
+        workspaceName,
+        options = {}
+    ) {
+        const {
+            updateHash = true,
+            focusTab = false
+        } = options;
+
+        const normalized = VALID_WORKSPACES.has(workspaceName)
+            ? workspaceName
+            : "studio";
+
+        workspaceTabs.forEach((tab) => {
+            const active = tab.dataset.workspace === normalized;
+            tab.setAttribute(
+                "aria-selected",
+                active ? "true" : "false"
+            );
+            tab.tabIndex = active ? 0 : -1;
+
+            if (active && focusTab) {
+                tab.focus();
+            }
+        });
+
+        workspacePanels.forEach((panel) => {
+            const active =
+                panel.dataset.workspacePanel === normalized;
+
+            panel.hidden = !active;
+        });
+
+        try {
+            window.localStorage.setItem(
+                WORKSPACE_STORAGE_KEY,
+                normalized
+            );
+        } catch (error) {
+            console.debug(
+                "Workspace preference could not be saved.",
+                error
+            );
+        }
+
+        if (updateHash) {
+            const nextHash = `#${normalized}`;
+
+            if (window.location.hash !== nextHash) {
+                window.history.replaceState(
+                    null,
+                    "",
+                    `${window.location.pathname}${window.location.search}${nextHash}`
+                );
+            }
+        }
+
+        if (normalized === "studio") {
+            window.requestAnimationFrame(updateSignPreview);
+        }
+    }
+
+    function initializeWorkspaces() {
+        if (!workspaceTabs.length || !workspacePanels.length) {
+            return;
+        }
+
+        workspaceTabs.forEach((tab, index) => {
+            tab.addEventListener("click", () => {
+                activateWorkspace(tab.dataset.workspace);
+            });
+
+            tab.addEventListener("keydown", (event) => {
+                if (
+                    event.key !== "ArrowLeft" &&
+                    event.key !== "ArrowRight" &&
+                    event.key !== "Home" &&
+                    event.key !== "End"
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                let nextIndex = index;
+
+                if (event.key === "ArrowRight") {
+                    nextIndex = (index + 1) % workspaceTabs.length;
+                } else if (event.key === "ArrowLeft") {
+                    nextIndex =
+                        (index - 1 + workspaceTabs.length) %
+                        workspaceTabs.length;
+                } else if (event.key === "Home") {
+                    nextIndex = 0;
+                } else if (event.key === "End") {
+                    nextIndex = workspaceTabs.length - 1;
+                }
+
+                activateWorkspace(
+                    workspaceTabs[nextIndex].dataset.workspace,
+                    { focusTab: true }
+                );
+            });
+        });
+
+        window.addEventListener("hashchange", () => {
+            const workspace = workspaceFromHash();
+
+            if (workspace) {
+                activateWorkspace(
+                    workspace,
+                    { updateHash: false }
+                );
+            }
+        });
+
+        if (openLogoUploadTab) {
+            openLogoUploadTab.addEventListener("click", () => {
+                activateWorkspace("upload");
+                window.requestAnimationFrame(() => {
+                    if (logoUploadButton) {
+                        logoUploadButton.focus();
+                    }
+                });
+            });
+        }
+
+        activateWorkspace(getInitialWorkspace());
     }
 
     function showToast(message, isError = false, timeout = 4200) {
@@ -551,7 +756,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("file", file);
 
-        setLogoStatus(`Uploading ${file.name}...`);
+        const uploadingMessage = `Uploading ${file.name}...`;
+        setLogoStatus(uploadingMessage);
+        setStatus(logoUploadStatus, uploadingMessage);
 
         if (logoUploadButton) {
             logoUploadButton.disabled = true;
@@ -577,11 +784,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const message =
                 `Logo uploaded and selected: ${result.filename}`;
             setLogoStatus(message);
+            setStatus(logoUploadStatus, message);
             showToast(message);
 
         } catch (error) {
             console.error(error);
             setLogoStatus(error.message, true);
+            setStatus(logoUploadStatus, error.message, true);
+            showToast(error.message, true);
 
         } finally {
             if (logoFileInput) {
@@ -688,6 +898,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ? mediaTableBody.querySelectorAll(".media-row").length
             : 0;
         mediaCount.textContent = String(count);
+
+        if (playlistTabCount) {
+            playlistTabCount.textContent = String(count);
+        }
     }
 
     function validHex(value) {
@@ -1140,6 +1354,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resetSignButton.addEventListener("click", resetSignDesigner);
     }
 
+    initializeWorkspaces();
     loadSignTemplates();
     loadLogoLibrary();
     updateLogoControlLabels();
@@ -1156,10 +1371,21 @@ document.addEventListener("DOMContentLoaded", () => {
         event.stopPropagation();
     }
 
-    async function uploadFile(file, currentNumber, totalFiles) {
+    async function uploadAssetFile(
+        file,
+        currentNumber,
+        totalFiles,
+        assetType,
+        statusElement
+    ) {
         const formData = new FormData();
         formData.append("file", file);
-        setStatus(uploadStatus, `Uploading ${currentNumber} of ${totalFiles}: ${file.name}`);
+        formData.append("asset_type", assetType);
+
+        setStatus(
+            statusElement,
+            `Uploading ${currentNumber} of ${totalFiles}: ${file.name}`
+        );
 
         const response = await fetch("/api/media", {
             method: "POST",
@@ -1167,19 +1393,33 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         let result;
+
         try {
             result = await response.json();
         } catch (error) {
-            throw new Error(`The server returned an invalid response for ${file.name}.`);
+            throw new Error(
+                `The server returned an invalid response for ${file.name}.`
+            );
         }
 
         if (!response.ok) {
-            throw new Error(result.error || `Upload failed for ${file.name}.`);
+            throw new Error(
+                result.error || `Upload failed for ${file.name}.`
+            );
         }
+
+        return result;
     }
 
-    async function uploadFiles(fileList) {
+    async function uploadAssetFiles(
+        fileList,
+        assetType,
+        uploadZone,
+        fileInput,
+        statusElement
+    ) {
         const files = Array.from(fileList);
+
         if (!files.length) {
             return;
         }
@@ -1188,18 +1428,41 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadZone.classList.add("uploading");
 
         try {
-            for (let index = 0; index < files.length; index += 1) {
-                await uploadFile(files[index], index + 1, files.length);
+            for (
+                let index = 0;
+                index < files.length;
+                index += 1
+            ) {
+                await uploadAssetFile(
+                    files[index],
+                    index + 1,
+                    files.length,
+                    assetType,
+                    statusElement
+                );
             }
+
+            const libraryName =
+                assetType === "background"
+                    ? "background library"
+                    : "playlist";
+
             const message =
-                `${files.length} file(s) uploaded successfully.`;
-            setStatus(uploadStatus, message);
+                `${files.length} file(s) added to the ${libraryName}.`;
+
+            setStatus(statusElement, message);
             showToast(message);
-            window.setTimeout(() => window.location.reload(), 900);
+
+            window.setTimeout(
+                () => window.location.reload(),
+                900
+            );
+
         } catch (error) {
             console.error(error);
-            setStatus(uploadStatus, error.message, true);
+            setStatus(statusElement, error.message, true);
             showToast(error.message, true);
+
         } finally {
             fileInput.disabled = false;
             uploadZone.classList.remove("uploading");
@@ -1207,10 +1470,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    if (uploadZone && fileInput) {
-        ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-            document.addEventListener(eventName, preventFileNavigation, false);
-        });
+    function configureAssetUpload(
+        uploadZone,
+        fileInput,
+        statusElement,
+        assetType
+    ) {
+        if (!uploadZone || !fileInput) {
+            return;
+        }
 
         ["dragenter", "dragover"].forEach((eventName) => {
             uploadZone.addEventListener(eventName, (event) => {
@@ -1226,16 +1494,67 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        uploadZone.addEventListener("drop", (event) => uploadFiles(event.dataTransfer.files));
-        uploadZone.addEventListener("click", () => fileInput.click());
+        uploadZone.addEventListener("drop", (event) => {
+            uploadAssetFiles(
+                event.dataTransfer.files,
+                assetType,
+                uploadZone,
+                fileInput,
+                statusElement
+            );
+        });
+
+        uploadZone.addEventListener(
+            "click",
+            () => fileInput.click()
+        );
+
         uploadZone.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 fileInput.click();
             }
         });
-        fileInput.addEventListener("change", () => uploadFiles(fileInput.files));
+
+        fileInput.addEventListener("change", () => {
+            uploadAssetFiles(
+                fileInput.files,
+                assetType,
+                uploadZone,
+                fileInput,
+                statusElement
+            );
+        });
     }
+
+    if (
+        playlistUploadZone ||
+        backgroundUploadZone
+    ) {
+        ["dragenter", "dragover", "dragleave", "drop"].forEach(
+            (eventName) => {
+                document.addEventListener(
+                    eventName,
+                    preventFileNavigation,
+                    false
+                );
+            }
+        );
+    }
+
+    configureAssetUpload(
+        playlistUploadZone,
+        playlistFileInput,
+        playlistUploadStatus,
+        "playlist"
+    );
+
+    configureAssetUpload(
+        backgroundUploadZone,
+        backgroundFileInput,
+        backgroundUploadStatus,
+        "background"
+    );
 
     let draggedRow = null;
 
