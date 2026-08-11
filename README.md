@@ -1,23 +1,16 @@
-# CPIT Signage
+# CPIT Signage Studio
 
-**A lightweight, self-hosted digital signage platform for hospitality and commercial environments.**
+A lightweight, self-hosted digital signage platform for hospitality and commercial environments.
 
-CPIT Signage began as a low-cost solution for a hotel lobby television that needed to display remodel renderings and informational content. It now provides a remotely manageable signage appliance with local media storage, browser-based administration, image uploads, drag-and-drop playlist ordering, message-slide creation, and automatic player updates.
+CPIT Signage Studio provides a remotely manageable signage appliance with local media storage, browser-based administration, sign creation, reusable branding, background libraries, playlist management, and automatic player updates.
 
-## Current Development Status
+## Current Release
 
-- Current development line: `v0.5.1`
-- Current feature branch: `feature/create-slide-designer`
-- Current release state: development / pre-tag
-- Production candidate scope: image playback, remote management, media administration, and Create Sign
-
-The project is already capable of satisfying the original hotel request:
-
-- Display pictures on a lobby television
-- Add, remove, reorder, and disable content remotely
-- Create informational message slides without external design software
-- Continue playback from locally stored content
-- Support both local and off-premises administration
+- Current release: `v1.0.0`
+- Release state: production
+- Supported platforms tested: QSR DX3000 and Bematech LC8810
+- Core workflows: Studio, Upload, Playlist
+- Deployment: automated installer, upgrade tools, and health diagnostics
 
 ## Core Features
 
@@ -25,20 +18,23 @@ The project is already capable of satisfying the original hotel request:
 - Chromium kiosk playback
 - Flask application service
 - SQLite media database
-- Image slideshow with fade transitions
-- Automatic 15-second playlist polling
 - Browser-based administration
+- Studio workspace for sign creation
+- Reusable sign templates
+- Logo library
+- Background library
+- Separate playlist and background asset types
+- Live 16:9 preview
+- Server-rendered 1920 × 1080 PNG signs
 - Multi-image uploads
 - Drag-and-drop playlist ordering
 - Duration editing
-- Enable and disable controls
+- Enable/disable controls
 - Media deletion
-- Create Sign designer
-- Server-rendered 1920×1080 PNG signs
-- Live 16:9 sign preview
-- SSH management
-- Tailscale remote access
-- Offline playback after content is stored locally
+- Health-check diagnostics
+- Automated installer and upgrade tools
+- SSH and Tailscale remote management
+- Offline playback
 - Git-based version control
 
 ## Proven Remote-Management Scenario
@@ -164,11 +160,4 @@ Detailed documentation is available in the `docs/` directory:
 
 ## Immediate Next Step
 
-The recommended stopping point is to:
-
-1. Validate the redesigned Create Sign interface.
-2. Confirm upload, delete, reorder, duration, enable/disable, polling, and sign generation.
-3. Commit the `v0.5.1` work.
-4. Merge the feature branch into `main`.
-5. Tag `v0.5.1`.
-6. Deploy the appliance for the hotel proof of concept.
+.......PENDING
