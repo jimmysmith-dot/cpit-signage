@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from app.services.template_packs import (
+    get_pack_template,
+    get_pack_templates,
+)
+
 SIGN_TEMPLATES = {
     "blank": {
         "id": "blank",
@@ -131,18 +136,30 @@ SIGN_TEMPLATES = {
 
 
 def get_sign_templates() -> list[dict]:
-    """Return all templates in display order."""
-    return [
-        deepcopy(SIGN_TEMPLATES[template_id])
-        for template_id in SIGN_TEMPLATES
-    ]
+    """Return built-in and installed pack templates in display order."""
+    core_templates = []
+
+    for template_id in SIGN_TEMPLATES:
+        template = deepcopy(SIGN_TEMPLATES[template_id])
+        template["pack_id"] = "core"
+        template["pack_name"] = "Core"
+        template["pack_version"] = "1.0.0"
+        template["source"] = "core"
+        core_templates.append(template)
+
+    return core_templates + get_pack_templates()
 
 
 def get_sign_template(template_id: str) -> dict | None:
-    """Return one template by ID, or None when it does not exist."""
+    """Return one core or installed pack template by ID."""
     template = SIGN_TEMPLATES.get(template_id)
 
-    if template is None:
-        return None
+    if template is not None:
+        result = deepcopy(template)
+        result["pack_id"] = "core"
+        result["pack_name"] = "Core"
+        result["pack_version"] = "1.0.0"
+        result["source"] = "core"
+        return result
 
-    return deepcopy(template)
+    return get_pack_template(template_id)

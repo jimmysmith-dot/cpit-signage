@@ -1,0 +1,58 @@
+[
+  {
+    "id": "featured-cigar",
+    "name": "Featured Cigar",
+    "description": "Spotlight one cigar, promotion, or limited release.",
+    "title": "Featured Cigar",
+    "body": "Add cigar name, vitola, tasting notes, and price here.",
+    "footer": "Ask our staff for availability.",
+    "background_color": "#2B1B12",
+    "text_color": "#FFF8E8",
+    "accent_color": "#C79A52",
+    "alignment": "center",
+    "overlay_opacity": 40,
+    "duration": 12
+  },
+  {
+    "id": "new-arrivals",
+    "name": "New Arrivals",
+    "description": "Announce newly stocked cigars or a fresh shipment.",
+    "title": "New Arrivals",
+    "body": "Fresh selections are now available in the humidor.",
+    "footer": "See staff for current inventory.",
+    "background_color": "#1F241D",
+    "text_color": "#F7F3E8",
+    "accent_color": "#B9955A",
+    "alignment": "center",
+    "overlay_opacity": 35,
+    "duration": 12
+  },
+  {
+    "id": "lounge-event",
+    "name": "Lounge Event",
+    "description": "Promote a tasting, pairing, vendor event, or lounge night.",
+    "title": "Lounge Event",
+    "body": "Add event name, date, time, and featured brand here.",
+    "footer": "Reservations may be limited.",
+    "background_color": "#301B1B",
+    "text_color": "#FFF7ED",
+    "accent_color": "#D8A45D",
+    "alignment": "center",
+    "overlay_opacity": 40,
+    "duration": 12
+  },
+  {
+    "id": "price-list",
+    "name": "Price List",
+    "description": "Starter price-list layout for quick lounge or retail updates.",
+    "title": "Cigar Selection",
+    "body": "Cigar One ........ $12\\nCigar Two ........ $16\\nCigar Three ...... $20",
+    "footer": "Prices and availability are subject to change.",
+    "background_color": "#24170F",
+    "text_color": "#FFF7E6",
+    "accent_color": "#B88645",
+    "alignment": "left",
+    "overlay_opacity": 35,
+    "duration": 15
+  }
+]
