@@ -1,4 +1,3 @@
-\
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
@@ -35,9 +34,9 @@ rsync -a \
     --exclude 'venv/' \
     --exclude '__pycache__/' \
     --exclude '*.pyc' \
-    --exclude 'config/signage.db' \
-    --exclude 'media/*' \
-    --exclude 'branding/logos/*' \
+    --exclude 'config/' \
+    --exclude 'media/' \
+    --exclude 'branding/logos/' \
     "${SOURCE_DIR}/" "${APP_DIR}/"
 
 chown -R "${CPIT_USER}:${CPIT_GROUP}" "${APP_DIR}"
@@ -46,13 +45,17 @@ if [[ ! -x "${APP_DIR}/venv/bin/python" ]]; then
     sudo -u "${CPIT_USER}" python3 -m venv "${APP_DIR}/venv"
 fi
 
-sudo -u "${CPIT_USER}" "${APP_DIR}/venv/bin/python" -m pip install --upgrade pip wheel
-sudo -u "${CPIT_USER}" "${APP_DIR}/venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
+sudo -u "${CPIT_USER}" \
+    "${APP_DIR}/venv/bin/python" -m pip install --upgrade pip wheel
+
+sudo -u "${CPIT_USER}" \
+    "${APP_DIR}/venv/bin/pip" install -r "${APP_DIR}/requirements.txt"
 
 if [[ -f "${APP_DIR}/app/init_database.py" ]]; then
     (
         cd "${APP_DIR}"
-        sudo -u "${CPIT_USER}" "${APP_DIR}/venv/bin/python" -m app.init_database
+        sudo -u "${CPIT_USER}" \
+            "${APP_DIR}/venv/bin/python" -m app.init_database
     )
 fi
 
