@@ -89,9 +89,20 @@ command -v lightdm >/dev/null 2>&1 \
     && ok "LightDM is installed" \
     || fail "LightDM is not installed"
 
-[[ -f /etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf ]] \
-    && ok "Autologin configuration exists" \
-    || warn "Autologin configuration is missing"
+AUTOLOGIN_DROPIN="/etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf"
+AUTOLOGIN_MAIN="/etc/lightdm/lightdm.conf"
+
+if [[ -f "${AUTOLOGIN_DROPIN}" ]] \
+    && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' \
+        "${AUTOLOGIN_DROPIN}"; then
+    ok "Autologin configuration exists (LightDM drop-in)"
+elif [[ -f "${AUTOLOGIN_MAIN}" ]] \
+    && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' \
+        "${AUTOLOGIN_MAIN}"; then
+    ok "Autologin configuration exists (lightdm.conf)"
+else
+    warn "Autologin configuration is missing"
+fi
 
 echo
 printf "Results: %d passed, %d warnings, %d failed\n" \
