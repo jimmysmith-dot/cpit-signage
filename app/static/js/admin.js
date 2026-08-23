@@ -391,7 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderTemplatePacks(packs) {
         if (!templatePackList) return;
+
         templatePackList.innerHTML = "";
+
         if (!Array.isArray(packs) || !packs.length) {
             const empty = document.createElement("div");
             empty.className = "logo-gallery-empty";
@@ -399,36 +401,63 @@ document.addEventListener("DOMContentLoaded", () => {
             templatePackList.appendChild(empty);
             return;
         }
+
         packs.forEach((pack) => {
             const card = document.createElement("div");
-            card.className = "logo-card";
-            card.style.cursor = "default";
+            card.className = "template-pack-card";
+
+            const info = document.createElement("div");
+            info.className = "template-pack-info";
+
             const name = document.createElement("strong");
+            name.className = "template-pack-name";
             name.textContent = pack.name || pack.id;
+
             const details = document.createElement("span");
-            details.className = "logo-card-name";
-            details.textContent = `v${pack.version || "?"} • ${pack.template_count || 0} templates`;
+            details.className = "template-pack-details";
+            details.textContent =
+                `v${pack.version || "?"} • ${pack.template_count || 0} templates`;
+
             const remove = document.createElement("button");
             remove.type = "button";
-            remove.className = "secondary";
-            remove.style.marginTop = "10px";
+            remove.className = "template-pack-remove";
             remove.textContent = "Remove";
+
             remove.addEventListener("click", async () => {
-                if (!window.confirm(`Remove "${pack.name || pack.id}"?`)) return;
+                if (!window.confirm(`Remove "${pack.name || pack.id}"?`)) {
+                    return;
+                }
+
                 remove.disabled = true;
+                remove.textContent = "Removing...";
+
                 try {
-                    const response = await fetch(`/api/template-packs/${encodeURIComponent(pack.id)}`, {method:"DELETE"});
+                    const response = await fetch(
+                        `/api/template-packs/${encodeURIComponent(pack.id)}`,
+                        { method: "DELETE" }
+                    );
                     const payload = await response.json();
-                    if (!response.ok) throw new Error(payload.error || "Pack removal failed.");
-                    showToast(payload.message || "Template pack removed.");
+
+                    if (!response.ok) {
+                        throw new Error(
+                            payload.error || "Pack removal failed."
+                        );
+                    }
+
+                    showToast(
+                        payload.message || "Template pack removed."
+                    );
                     await loadTemplatePacks();
                     await loadSignTemplates();
                 } catch (error) {
                     showToast(error.message, true);
                     remove.disabled = false;
+                    remove.textContent = "Remove";
                 }
             });
-            card.append(name, details, remove);
+
+            info.append(name, details);
+            card.append(info, remove);
             templatePackList.appendChild(card);
         });
     }

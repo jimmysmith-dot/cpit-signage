@@ -123,6 +123,15 @@
         .logo-delete-button { position: absolute; top: 5px; right: 5px; min-width: 26px; min-height: 26px; padding: 2px 7px; border-radius: 999px; background: rgba(180,35,24,.92); font-size: .8rem; line-height: 1; }
         .logo-delete-button:hover { background: var(--danger-hover); }
         .logo-gallery-empty { grid-column: 1 / -1; padding: 20px 12px; border: 1px dashed #aeb9c4; border-radius: 7px; color: var(--muted); text-align: center; }
+        .template-pack-list { display: grid; gap: 10px; margin-top: 14px; }
+        .template-pack-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; width: 100%; padding: 15px 16px; border: 1px solid #d8e0e8; border-radius: 8px; background: #fff; box-shadow: 0 1px 4px rgba(31,41,51,.06); }
+        .template-pack-card:hover { border-color: #b8c9d8; background: #fbfdff; }
+        .template-pack-info { min-width: 0; }
+        .template-pack-name { display: block; color: var(--text); font-size: .96rem; font-weight: 850; line-height: 1.25; }
+        .template-pack-details { display: block; margin-top: 4px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+        .template-pack-remove { flex: 0 0 auto; min-height: 36px; padding: 7px 13px; background: var(--danger); font-size: .84rem; }
+        .template-pack-remove:hover { background: var(--danger-hover); }
+        @media (max-width: 520px) { .template-pack-card { align-items: stretch; flex-direction: column; } .template-pack-remove { width: 100%; } }
         .logo-controls { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin-top: 15px; }
         .range-control { display: grid; grid-template-columns: 1fr 72px; gap: 10px; align-items: center; }
         .range-control input[type="range"] { width: 100%; }
@@ -638,7 +647,7 @@
             <button type="button" id="template-pack-install-button">Choose Pack ZIP</button>
             <p id="template-pack-status" class="upload-status" aria-live="polite"></p>
         </div>
-        <div id="template-pack-list" class="logo-gallery" style="margin-top:16px;"></div>
+        <div id="template-pack-list" class="template-pack-list" style="margin-top:16px;"></div>
     </div>
 </section>
 
