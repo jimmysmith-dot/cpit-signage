@@ -625,7 +625,24 @@
                         class="inline-status"
                         aria-live="polite"
                     ></div>
-                    <p class="workspace-footer-note">
+                    <section class="panel library-panel" id="template-pack-manager">
+    <div class="panel-header"><div>
+        <h2>Template Packs</h2>
+        <p>Install or remove optional template packs.</p>
+    </div></div>
+    <div class="panel-body">
+        <div class="upload-logo-zone">
+            <p><strong>Install Template Pack</strong></p>
+            <p class="upload-help">Choose a CPIT Signage template-pack ZIP.</p>
+            <input id="template-pack-file" type="file" accept=".zip,application/zip" hidden>
+            <button type="button" id="template-pack-install-button">Choose Pack ZIP</button>
+            <p id="template-pack-status" class="upload-status" aria-live="polite"></p>
+        </div>
+        <div id="template-pack-list" class="logo-gallery" style="margin-top:16px;"></div>
+    </div>
+</section>
+
+<p class="workspace-footer-note">
                         Playlist images appear in playback controls and
                         are sent to the player.
                     </p>

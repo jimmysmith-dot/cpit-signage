@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import shutil
+import tempfile
+import zipfile
 from copy import deepcopy
 from pathlib import Path
 
@@ -307,3 +310,100 @@ def get_pack_background_path(
         return None
 
     return path
+
+def get_installed_template_packs():
+    """Return metadata for installed and valid template packs."""
+    result = []
+    for manifest in discover_template_packs():
+        item = dict(manifest)
+        try:
+            item["template_count"] = len(load_template_pack(PACKS_DIR / manifest["id"]))
+            item["valid"] = True
+            item["error"] = ""
+        except TemplatePackError as error:
+            item["template_count"] = 0
+            item["valid"] = False
+            item["error"] = str(error)
+        result.append(item)
+    return result
+
+
+def install_template_pack_zip(zip_path: Path):
+    """Safely validate and install a template-pack ZIP."""
+    PACKS_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        archive = zipfile.ZipFile(zip_path)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise TemplatePackError("The uploaded file is not a valid ZIP archive.") from error
+
+    with archive:
+        files = [m for m in archive.infolist() if not m.is_dir()]
+        if not files:
+            raise TemplatePackError("The template pack ZIP is empty.")
+        if len(files) > 500 or sum(m.file_size for m in files) > 100 * 1024 * 1024:
+            raise TemplatePackError("The template pack ZIP exceeds installation limits.")
+
+        with tempfile.TemporaryDirectory(prefix="cpit-pack-") as temp:
+            root = Path(temp).resolve()
+            for member in files:
+                relative = Path(member.filename)
+                if relative.is_absolute() or ".." in relative.parts:
+                    raise TemplatePackError("The ZIP contains an unsafe file path.")
+                destination = (root / relative).resolve()
+                if root not in destination.parents:
+                    raise TemplatePackError("The ZIP contains an unsafe file path.")
+            archive.extractall(root)
+
+            roots = [p for p in root.iterdir() if p.name != "__MACOSX"]
+            source = roots[0] if len(roots) == 1 and roots[0].is_dir() else root
+
+            manifest_data = _read_json(source / "manifest.json")
+            pack_id = _normalize_pack_id(manifest_data.get("id", ""))
+            staging = root / ".validated" / pack_id
+            staging.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(source, staging)
+            manifest = _validate_manifest(_read_json(staging / "manifest.json"), staging)
+
+            templates_data = _read_json(staging / "templates.json")
+            if not isinstance(templates_data, list):
+                raise TemplatePackError("templates.json must contain an array of templates.")
+
+            for template in templates_data:
+                if not isinstance(template, dict):
+                    raise TemplatePackError("Templates must be JSON objects.")
+                missing = REQUIRED_TEMPLATE_FIELDS - template.keys()
+                if missing:
+                    raise TemplatePackError(
+                        "Template is missing required field(s): " + ", ".join(sorted(missing))
+                    )
+                background = str(template.get("background_asset", "")).strip()
+                if background:
+                    if Path(background).name != background:
+                        raise TemplatePackError("A template contains an invalid background asset.")
+                    if not (staging / "backgrounds" / background).is_file():
+                        raise TemplatePackError(
+                            f"Template '{template.get('id', '')}' references a missing background asset."
+                        )
+
+            target = PACKS_DIR / pack_id
+            if target.exists():
+                raise TemplatePackError(f"Template pack '{pack_id}' is already installed.")
+            shutil.copytree(staging, target)
+
+            # Full installed validation uses the existing production loader.
+            templates = load_template_pack(target)
+            result = dict(manifest)
+            result["template_count"] = len(templates)
+            result["valid"] = True
+            return result
+
+
+def uninstall_template_pack(pack_id: str):
+    """Remove one installed optional template pack."""
+    normalized = _normalize_pack_id(pack_id)
+    target = PACKS_DIR / normalized
+    if not target.is_dir():
+        raise TemplatePackError("Template pack is not installed.")
+    manifest = _validate_manifest(_read_json(target / "manifest.json"), target)
+    shutil.rmtree(target)
+    return manifest

@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, request, send_from_directory
@@ -28,7 +29,11 @@ from app.services.sign_templates import (
     get_sign_templates,
 )
 from app.services.template_packs import (
+    TemplatePackError,
     get_pack_background_path,
+    get_installed_template_packs,
+    install_template_pack_zip,
+    uninstall_template_pack,
 )
 from app.services.logo_tools import (
     LOGO_POSITIONS,
@@ -81,6 +86,47 @@ def serialize_logo(path: Path):
         "url": f"/api/logos/{path.name}",
         "size_bytes": path.stat().st_size,
     }
+
+
+@api_bp.route("/template-packs", methods=["GET"])
+def template_pack_list():
+    return jsonify(get_installed_template_packs())
+
+
+@api_bp.route("/template-packs/install", methods=["POST"])
+def template_pack_install():
+    if "file" not in request.files:
+        return jsonify({"error": "No template pack ZIP was included"}), 400
+    uploaded = request.files["file"]
+    if not uploaded or not uploaded.filename:
+        return jsonify({"error": "No template pack ZIP was selected"}), 400
+    if Path(uploaded.filename).suffix.lower() != ".zip":
+        return jsonify({"error": "Template packs must be ZIP files"}), 400
+
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as handle:
+            temporary_path = Path(handle.name)
+            uploaded.save(handle)
+        pack = install_template_pack_zip(temporary_path)
+        return jsonify({
+            "message": f"Template pack '{pack['name']}' installed.",
+            "pack": pack,
+        }), 201
+    except TemplatePackError as error:
+        return jsonify({"error": str(error)}), 400
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
+@api_bp.route("/template-packs/<string:pack_id>", methods=["DELETE"])
+def template_pack_delete(pack_id):
+    try:
+        pack = uninstall_template_pack(pack_id)
+        return jsonify({"message": f"Template pack '{pack['name']}' removed."})
+    except TemplatePackError as error:
+        return jsonify({"error": str(error)}), 400
 
 
 @api_bp.route("/sign-templates", methods=["GET"])

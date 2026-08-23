@@ -43,6 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "background-upload-status"
     );
 
+    const templatePackFile = document.getElementById("template-pack-file");
+    const templatePackInstallButton = document.getElementById("template-pack-install-button");
+    const templatePackStatus = document.getElementById("template-pack-status");
+    const templatePackList = document.getElementById("template-pack-list");
+
     const createSignForm = document.getElementById("create-sign-form");
     const createSignButton = document.getElementById("create-sign-button");
     const resetSignButton = document.getElementById("reset-sign-button");
@@ -382,6 +387,86 @@ document.addEventListener("DOMContentLoaded", () => {
         templateDescription.style.color = isError
             ? "var(--danger)"
             : "";
+    }
+
+    function renderTemplatePacks(packs) {
+        if (!templatePackList) return;
+        templatePackList.innerHTML = "";
+        if (!Array.isArray(packs) || !packs.length) {
+            const empty = document.createElement("div");
+            empty.className = "logo-gallery-empty";
+            empty.textContent = "No optional template packs are installed.";
+            templatePackList.appendChild(empty);
+            return;
+        }
+        packs.forEach((pack) => {
+            const card = document.createElement("div");
+            card.className = "logo-card";
+            card.style.cursor = "default";
+            const name = document.createElement("strong");
+            name.textContent = pack.name || pack.id;
+            const details = document.createElement("span");
+            details.className = "logo-card-name";
+            details.textContent = `v${pack.version || "?"} • ${pack.template_count || 0} templates`;
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "secondary";
+            remove.style.marginTop = "10px";
+            remove.textContent = "Remove";
+            remove.addEventListener("click", async () => {
+                if (!window.confirm(`Remove "${pack.name || pack.id}"?`)) return;
+                remove.disabled = true;
+                try {
+                    const response = await fetch(`/api/template-packs/${encodeURIComponent(pack.id)}`, {method:"DELETE"});
+                    const payload = await response.json();
+                    if (!response.ok) throw new Error(payload.error || "Pack removal failed.");
+                    showToast(payload.message || "Template pack removed.");
+                    await loadTemplatePacks();
+                    await loadSignTemplates();
+                } catch (error) {
+                    showToast(error.message, true);
+                    remove.disabled = false;
+                }
+            });
+            card.append(name, details, remove);
+            templatePackList.appendChild(card);
+        });
+    }
+
+    async function loadTemplatePacks() {
+        if (!templatePackList) return;
+        try {
+            const response = await fetch("/api/template-packs", {cache:"no-store"});
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || "Could not load template packs.");
+            renderTemplatePacks(payload);
+        } catch (error) {
+            setStatus(templatePackStatus, error.message, true);
+        }
+    }
+
+    async function installSelectedTemplatePack() {
+        const file = templatePackFile?.files?.[0];
+        if (!file) return;
+        templatePackInstallButton.disabled = true;
+        setStatus(templatePackStatus, `Installing ${file.name}...`);
+        const form = new FormData();
+        form.append("file", file);
+        try {
+            const response = await fetch("/api/template-packs/install", {method:"POST", body:form});
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || "Template pack installation failed.");
+            setStatus(templatePackStatus, payload.message || "Template pack installed.");
+            showToast(payload.message || "Template pack installed.");
+            templatePackFile.value = "";
+            await loadTemplatePacks();
+            await loadSignTemplates();
+        } catch (error) {
+            setStatus(templatePackStatus, error.message, true);
+            showToast(error.message, true);
+        } finally {
+            templatePackInstallButton.disabled = false;
+        }
     }
 
     function populateTemplateSelect(templates) {
@@ -1446,6 +1531,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (resetSignButton) {
         resetSignButton.addEventListener("click", resetSignDesigner);
     }
+
+    if (templatePackInstallButton && templatePackFile) {
+        templatePackInstallButton.addEventListener("click", () => templatePackFile.click());
+        templatePackFile.addEventListener("change", installSelectedTemplatePack);
+    }
+    loadTemplatePacks();
 
     initializeWorkspaces();
     loadSignTemplates();
