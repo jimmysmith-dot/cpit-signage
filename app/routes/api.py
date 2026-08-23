@@ -27,6 +27,9 @@ from app.services.sign_templates import (
     get_sign_template,
     get_sign_templates,
 )
+from app.services.template_packs import (
+    get_pack_background_path,
+)
 from app.services.logo_tools import (
     LOGO_POSITIONS,
     LogoProcessingError,
@@ -100,6 +103,29 @@ def sign_template_detail(template_id):
         }), 404
 
     return jsonify(template)
+
+
+@api_bp.route(
+    "/template-packs/<string:pack_id>/backgrounds/<path:filename>",
+    methods=["GET"],
+)
+def template_pack_background(pack_id, filename):
+    """Serve a bundled template-pack background image."""
+    background_path = get_pack_background_path(
+        pack_id,
+        filename,
+    )
+
+    if background_path is None:
+        return jsonify({
+            "error": "Template pack background not found"
+        }), 404
+
+    return send_from_directory(
+        background_path.parent,
+        background_path.name,
+        conditional=True,
+    )
 
 
 @api_bp.route("/media/reorder", methods=["PUT"])
@@ -195,6 +221,9 @@ def create_slide():
 
     duration_value = data.get("duration", 10)
     background_media_id = data.get("background_media_id")
+    background_pack_asset = str(
+        data.get("background_pack_asset", "")
+    ).strip()
     overlay_value = data.get("overlay_opacity", 35)
 
     logo_filename = str(
@@ -259,7 +288,35 @@ def create_slide():
 
     background_image_path = None
 
-    if background_media_id not in (None, ""):
+    if background_media_id not in (None, "") and background_pack_asset:
+        return jsonify({
+            "error": (
+                "Choose either a media-library background "
+                "or a template-pack background, not both."
+            )
+        }), 400
+
+    if background_pack_asset:
+        if ":" not in background_pack_asset:
+            return jsonify({
+                "error": "Template pack background reference is invalid"
+            }), 400
+
+        pack_id, background_filename = (
+            background_pack_asset.split(":", 1)
+        )
+
+        background_image_path = get_pack_background_path(
+            pack_id,
+            background_filename,
+        )
+
+        if background_image_path is None:
+            return jsonify({
+                "error": "Template pack background was not found"
+            }), 404
+
+    elif background_media_id not in (None, ""):
         try:
             normalized_background_id = int(background_media_id)
         except (TypeError, ValueError):

@@ -12,7 +12,7 @@ PACKS_DIR = PROJECT_ROOT / "packs"
 SUPPORTED_TEMPLATE_FIELDS = {
     "id", "name", "description", "title", "body", "footer",
     "background_color", "text_color", "accent_color", "alignment",
-    "overlay_opacity", "duration",
+    "overlay_opacity", "duration", "background_asset",
 }
 
 REQUIRED_TEMPLATE_FIELDS = {"id", "name"}
@@ -131,6 +131,40 @@ def _validate_template(template, manifest: dict) -> dict:
     normalized.setdefault("overlay_opacity", 35)
     normalized.setdefault("duration", 10)
 
+    background_asset = str(
+        normalized.get("background_asset", "")
+    ).strip()
+
+    if background_asset:
+        background_path = (
+            PACKS_DIR
+            / manifest["id"]
+            / "backgrounds"
+            / background_asset
+        )
+
+        if (
+            Path(background_asset).name != background_asset
+            or not background_path.is_file()
+        ):
+            raise TemplatePackError(
+                f"Template '{normalized['id']}' references a "
+                "missing or invalid background asset."
+            )
+
+        normalized["background_asset"] = background_asset
+        normalized["background_pack_asset"] = (
+            f"{manifest['id']}:{background_asset}"
+        )
+        normalized["background_asset_url"] = (
+            f"/api/template-packs/{manifest['id']}"
+            f"/backgrounds/{background_asset}"
+        )
+    else:
+        normalized["background_asset"] = ""
+        normalized["background_pack_asset"] = ""
+        normalized["background_asset_url"] = ""
+
     if normalized["alignment"] not in {"left", "center", "right"}:
         raise TemplatePackError(
             f"Template '{normalized['id']}' has an invalid alignment."
@@ -241,3 +275,35 @@ def get_pack_template(template_id: str) -> dict | None:
             return deepcopy(template)
 
     return None
+
+
+def get_pack_background_path(
+    pack_id: str,
+    filename: str,
+) -> Path | None:
+    """Resolve one safe bundled background asset."""
+    normalized_pack_id = _normalize_pack_id(pack_id)
+    safe_filename = Path(str(filename)).name
+
+    if safe_filename != str(filename) or not safe_filename:
+        return None
+
+    pack_directory = PACKS_DIR / normalized_pack_id
+
+    if not pack_directory.is_dir():
+        return None
+
+    try:
+        _validate_manifest(
+            _read_json(pack_directory / "manifest.json"),
+            pack_directory,
+        )
+    except TemplatePackError:
+        return None
+
+    path = pack_directory / "backgrounds" / safe_filename
+
+    if not path.is_file():
+        return None
+
+    return path

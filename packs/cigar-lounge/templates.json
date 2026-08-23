@@ -10,8 +10,9 @@
     "text_color": "#FFF8E8",
     "accent_color": "#C79A52",
     "alignment": "center",
-    "overlay_opacity": 40,
-    "duration": 12
+    "overlay_opacity": 28,
+    "duration": 12,
+    "background_asset": "featured-cigar.png"
   },
   {
     "id": "new-arrivals",
@@ -25,7 +26,8 @@
     "accent_color": "#B9955A",
     "alignment": "center",
     "overlay_opacity": 35,
-    "duration": 12
+    "duration": 12,
+    "background_asset": "new-arrivals.png"
   },
   {
     "id": "lounge-event",
@@ -39,7 +41,8 @@
     "accent_color": "#D8A45D",
     "alignment": "center",
     "overlay_opacity": 40,
-    "duration": 12
+    "duration": 12,
+    "background_asset": "lounge-events.png"
   },
   {
     "id": "price-list",
@@ -53,6 +56,7 @@
     "accent_color": "#B88645",
     "alignment": "left",
     "overlay_opacity": 35,
-    "duration": 15
+    "duration": 15,
+    "background_asset": "price-list.png"
   }
 ]

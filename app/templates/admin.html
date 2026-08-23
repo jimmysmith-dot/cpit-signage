@@ -189,7 +189,7 @@
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.0</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.1</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
         <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items | selectattr('asset_type', 'equalto', 'playlist') | list | length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
@@ -501,6 +501,7 @@
                                                 'player.media',
                                                 filename=item['filename']
                                             ) }}"
+                                            data-filename="{{ item['filename'] }}"
                                         >
                                             {{ item['filename'] }}
                                         </option>

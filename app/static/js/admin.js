@@ -391,11 +391,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
         templateSelect.innerHTML = "";
 
+        const groups = new Map();
+
         templates.forEach((template) => {
-            const option = document.createElement("option");
-            option.value = template.id;
-            option.textContent = template.name;
-            templateSelect.appendChild(option);
+            const packName =
+                typeof template.pack_name === "string"
+                    ? template.pack_name.trim()
+                    : "";
+
+            const source =
+                typeof template.source === "string"
+                    ? template.source.trim().toLowerCase()
+                    : "";
+
+            const isCore =
+                !packName ||
+                source === "core" ||
+                packName.toLowerCase() === "core";
+
+            const groupName = isCore
+                ? "Core Templates"
+                : packName;
+
+            if (!groups.has(groupName)) {
+                groups.set(groupName, []);
+            }
+
+            groups.get(groupName).push(template);
+        });
+
+        const orderedGroups = Array.from(groups.entries()).sort(
+            ([groupA], [groupB]) => {
+                if (groupA === "Core Templates") {
+                    return -1;
+                }
+
+                if (groupB === "Core Templates") {
+                    return 1;
+                }
+
+                return groupA.localeCompare(groupB);
+            }
+        );
+
+        orderedGroups.forEach(([groupName, groupTemplates]) => {
+            const optgroup = document.createElement("optgroup");
+            optgroup.label = groupName;
+
+            groupTemplates.forEach((template) => {
+                const option = document.createElement("option");
+                option.value = template.id;
+                option.textContent = template.name;
+                optgroup.appendChild(option);
+            });
+
+            templateSelect.appendChild(optgroup);
         });
 
         templateSelect.disabled = templates.length === 0;
@@ -489,20 +539,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         /*
-         * Applying a template resets to a solid background. The user
-         * may switch to a library image afterward without losing the
-         * template's text, colors, alignment, or duration.
+         * Pack templates may ship with a bundled background. When one
+         * is present, expose it as a temporary option in the normal
+         * background selector so preview and publishing use the same
+         * Studio controls as library backgrounds.
          */
-        if (backgroundModeColor) {
-            backgroundModeColor.checked = true;
-        }
-
-        if (backgroundModeImage) {
-            backgroundModeImage.checked = false;
-        }
-
         if (backgroundMedia) {
-            backgroundMedia.value = "";
+            backgroundMedia
+                .querySelectorAll("[data-pack-template-background]")
+                .forEach((option) => option.remove());
+        }
+
+        if (
+            template.background_asset_url &&
+            template.background_pack_asset &&
+            backgroundMedia
+        ) {
+            const option = document.createElement("option");
+            option.value = `pack:${template.background_pack_asset}`;
+            option.textContent = `${template.name} — Pack Background`;
+            option.dataset.url = template.background_asset_url;
+            option.dataset.packAsset = template.background_pack_asset;
+            option.dataset.packTemplateBackground = "true";
+
+            backgroundMedia.appendChild(option);
+            backgroundMedia.value = option.value;
+
+            if (backgroundModeColor) {
+                backgroundModeColor.checked = false;
+            }
+
+            if (backgroundModeImage) {
+                backgroundModeImage.checked = true;
+            }
+        } else {
+            if (backgroundModeColor) {
+                backgroundModeColor.checked = true;
+            }
+
+            if (backgroundModeImage) {
+                backgroundModeImage.checked = false;
+            }
+
+            if (backgroundMedia) {
+                backgroundMedia.value = "";
+            }
         }
 
         updateBackgroundControls();
@@ -968,9 +1049,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? "image"
                     : "color",
             backgroundMediaId:
-                backgroundMedia && backgroundMedia.value
+                backgroundMedia &&
+                backgroundMedia.value &&
+                !backgroundMedia.selectedOptions[0]?.dataset.packAsset
                     ? Number.parseInt(backgroundMedia.value, 10)
                     : null,
+            backgroundPackAsset:
+                backgroundMedia &&
+                backgroundMedia.selectedOptions.length
+                    ? backgroundMedia.selectedOptions[0].dataset.packAsset || ""
+                    : "",
             backgroundImageUrl:
                 backgroundMedia &&
                 backgroundMedia.selectedOptions.length
@@ -1162,10 +1250,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (
             values.backgroundMode === "image" &&
-            !Number.isInteger(values.backgroundMediaId)
+            !Number.isInteger(values.backgroundMediaId) &&
+            !values.backgroundPackAsset
         ) {
             throw new Error(
-                "Select a background image from the media library."
+                "Select a background image."
             );
         }
 
@@ -1219,6 +1308,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     values.backgroundMode === "image"
                         ? values.backgroundMediaId
                         : null,
+                background_pack_asset:
+                    values.backgroundMode === "image"
+                        ? values.backgroundPackAsset
+                        : "",
                 overlay_opacity: values.overlayOpacity,
                 logo_filename: values.logoFilename,
                 logo_position: values.logoPosition,
