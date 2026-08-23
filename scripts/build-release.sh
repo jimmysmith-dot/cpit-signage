@@ -6,6 +6,8 @@ VERSION="$(tr -d '[:space:]' < "${SOURCE_DIR}/VERSION")"
 OUTPUT_DIR="${SOURCE_DIR}/dist"
 RELEASE_NAME="cpit-signage-studio-${VERSION}"
 STAGING_DIR="${OUTPUT_DIR}/${RELEASE_NAME}"
+rm -rf "${STAGING_DIR}"
+mkdir -p "${STAGING_DIR}"
 
 required=(
     "app/app.py"
