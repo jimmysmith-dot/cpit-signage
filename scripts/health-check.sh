@@ -85,24 +85,69 @@ command -v chromium >/dev/null 2>&1 \
     && ok "Chromium is installed" \
     || fail "Chromium is not installed"
 
-command -v lightdm >/dev/null 2>&1 \
-    && ok "LightDM is installed" \
-    || fail "LightDM is not installed"
+DISPLAY_MANAGER=""
 
-AUTOLOGIN_DROPIN="/etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf"
-AUTOLOGIN_MAIN="/etc/lightdm/lightdm.conf"
-
-if [[ -f "${AUTOLOGIN_DROPIN}" ]] \
-    && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' \
-        "${AUTOLOGIN_DROPIN}"; then
-    ok "Autologin configuration exists (LightDM drop-in)"
-elif [[ -f "${AUTOLOGIN_MAIN}" ]] \
-    && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' \
-        "${AUTOLOGIN_MAIN}"; then
-    ok "Autologin configuration exists (lightdm.conf)"
-else
-    warn "Autologin configuration is missing"
+if [[ -r /etc/X11/default-display-manager ]]; then
+    DISPLAY_MANAGER="$(
+        basename "$(
+            tr -d '[:space:]' < /etc/X11/default-display-manager
+        )"
+    )"
 fi
+
+if [[ "${DISPLAY_MANAGER}" != "gdm3" && "${DISPLAY_MANAGER}" != "lightdm" ]]; then
+    if systemctl is-active gdm3 >/dev/null 2>&1; then
+        DISPLAY_MANAGER="gdm3"
+    elif systemctl is-active lightdm >/dev/null 2>&1; then
+        DISPLAY_MANAGER="lightdm"
+    fi
+fi
+
+case "${DISPLAY_MANAGER}" in
+    gdm3)
+        command -v gdm3 >/dev/null 2>&1 \
+            && ok "Display manager detected: GDM3" \
+            || fail "GDM3 is configured but not installed"
+        ;;
+    lightdm)
+        command -v lightdm >/dev/null 2>&1 \
+            && ok "Display manager detected: LightDM" \
+            || fail "LightDM is configured but not installed"
+        ;;
+    *)
+        warn "Supported display manager could not be detected"
+        ;;
+esac
+
+case "${DISPLAY_MANAGER}" in
+    gdm3)
+        GDM_CONFIG="/etc/gdm3/daemon.conf"
+        if [[ -f "${GDM_CONFIG}" ]] \
+            && grep -Eqi '^[[:space:]]*AutomaticLoginEnable[[:space:]]*=[[:space:]]*true[[:space:]]*$' "${GDM_CONFIG}" \
+            && grep -Eqi '^[[:space:]]*AutomaticLogin[[:space:]]*=[[:space:]]*[^#[:space:]]+' "${GDM_CONFIG}"; then
+            ok "Autologin configuration exists (GDM3)"
+        else
+            warn "GDM3 autologin configuration is missing"
+        fi
+        ;;
+    lightdm)
+        AUTOLOGIN_DROPIN="/etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf"
+        AUTOLOGIN_MAIN="/etc/lightdm/lightdm.conf"
+
+        if [[ -f "${AUTOLOGIN_DROPIN}" ]] \
+            && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' "${AUTOLOGIN_DROPIN}"; then
+            ok "Autologin configuration exists (LightDM drop-in)"
+        elif [[ -f "${AUTOLOGIN_MAIN}" ]] \
+            && grep -Eq '^[[:space:]]*autologin-user[[:space:]]*=[[:space:]]*[^#[:space:]]+' "${AUTOLOGIN_MAIN}"; then
+            ok "Autologin configuration exists (lightdm.conf)"
+        else
+            warn "LightDM autologin configuration is missing"
+        fi
+        ;;
+    *)
+        warn "Autologin could not be validated"
+        ;;
+esac
 
 echo
 printf "Results: %d passed, %d warnings, %d failed\n" \

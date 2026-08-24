@@ -233,17 +233,106 @@ for attempt in {1..20}; do
     sleep 1
 done
 
-step "Configuring LightDM autologin"
-mkdir -p /etc/lightdm/lightdm.conf.d
+step "Detecting display manager"
+DISPLAY_MANAGER=""
 
-sed \
-    -e "s/@CPIT_USER@/${CPIT_USER}/g" \
-    "${APP_DIR}/deployment/50-autologin.conf" \
-    > /etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf
+if [[ -r /etc/X11/default-display-manager ]]; then
+    DISPLAY_MANAGER="$(basename "$(tr -d '[:space:]' < /etc/X11/default-display-manager)")"
+fi
 
-groupadd -f autologin
-/usr/sbin/usermod -aG autologin "${CPIT_USER}"
-ok "LightDM autologin configured"
+if [[ "${DISPLAY_MANAGER}" != "gdm3" && "${DISPLAY_MANAGER}" != "lightdm" ]]; then
+    if systemctl is-active gdm3 >/dev/null 2>&1; then
+        DISPLAY_MANAGER="gdm3"
+    elif systemctl is-active lightdm >/dev/null 2>&1; then
+        DISPLAY_MANAGER="lightdm"
+    elif command -v gdm3 >/dev/null 2>&1; then
+        DISPLAY_MANAGER="gdm3"
+    elif command -v lightdm >/dev/null 2>&1; then
+        DISPLAY_MANAGER="lightdm"
+    fi
+fi
+
+case "${DISPLAY_MANAGER}" in
+    gdm3)
+        ok "Detected display manager: GDM3"
+        ;;
+    lightdm)
+        ok "Detected display manager: LightDM"
+        ;;
+    *)
+        DISPLAY_MANAGER="lightdm"
+        warn "No supported display manager detected; using LightDM fallback."
+        ;;
+esac
+
+step "Configuring desktop autologin"
+
+case "${DISPLAY_MANAGER}" in
+    gdm3)
+        GDM_CONFIG="/etc/gdm3/daemon.conf"
+        [[ -f "${GDM_CONFIG}" ]] || touch "${GDM_CONFIG}"
+
+        python3 - "${GDM_CONFIG}" "${CPIT_USER}" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+user = sys.argv[2]
+lines = path.read_text(encoding="utf-8").splitlines()
+
+daemon = next((i for i, line in enumerate(lines)
+               if line.strip().lower() == "[daemon]"), None)
+
+if daemon is None:
+    if lines and lines[-1].strip():
+        lines.append("")
+    lines.extend(["[daemon]", "AutomaticLoginEnable=true",
+                  f"AutomaticLogin={user}"])
+else:
+    end = len(lines)
+    for i in range(daemon + 1, len(lines)):
+        s = lines[i].strip()
+        if s.startswith("[") and s.endswith("]"):
+            end = i
+            break
+
+    found_enable = False
+    found_user = False
+
+    for i in range(daemon + 1, end):
+        normalized = lines[i].strip().lstrip("#").strip()
+        if normalized.lower().startswith("automaticloginenable="):
+            lines[i] = "AutomaticLoginEnable=true"
+            found_enable = True
+        elif normalized.lower().startswith("automaticlogin="):
+            lines[i] = f"AutomaticLogin={user}"
+            found_user = True
+
+    additions = []
+    if not found_enable:
+        additions.append("AutomaticLoginEnable=true")
+    if not found_user:
+        additions.append(f"AutomaticLogin={user}")
+    lines[end:end] = additions
+
+path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+PY
+        chmod 0644 "${GDM_CONFIG}"
+        ok "GDM3 autologin configured for ${CPIT_USER}"
+        ;;
+
+    lightdm)
+        mkdir -p /etc/lightdm/lightdm.conf.d
+        sed \
+            -e "s/@CPIT_USER@/${CPIT_USER}/g" \
+            "${APP_DIR}/deployment/50-autologin.conf" \
+            > /etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf
+
+        groupadd -f autologin
+        /usr/sbin/usermod -aG autologin "${CPIT_USER}"
+        ok "LightDM autologin configured for ${CPIT_USER}"
+        ;;
+esac
 
 step "Configuring Chromium kiosk startup"
 chmod 0755 \
@@ -263,8 +352,16 @@ ok "Kiosk startup configured"
 
 step "Enabling graphical boot"
 systemctl set-default graphical.target
-systemctl enable lightdm
-ok "Graphical startup enabled"
+
+case "${DISPLAY_MANAGER}" in
+    gdm3|lightdm)
+        systemctl enable "${DISPLAY_MANAGER}"
+        ok "Graphical startup enabled with ${DISPLAY_MANAGER}"
+        ;;
+    *)
+        warn "Graphical target enabled, but no supported display manager was selected."
+        ;;
+esac
 
 step "Running health check"
 "${APP_DIR}/scripts/health-check.sh"
