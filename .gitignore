@@ -66,3 +66,8 @@ branding/logos/*
 config/signage.db
 logs/
 dist/
+
+# Runtime configuration
+config/*
+!config/.gitkeep
+!config/*.example.json
