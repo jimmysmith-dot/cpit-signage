@@ -253,12 +253,19 @@ def create_sign_slide(
     text_color: str = DEFAULT_TEXT_COLOR,
     accent_color: str = DEFAULT_ACCENT_COLOR,
     alignment: str = "center",
+    show_divider: bool = True,
     background_image_path: Path | None = None,
     overlay_opacity: int = DEFAULT_OVERLAY_OPACITY,
     logo_path: Path | None = None,
     logo_position: str = "top-right",
     logo_width_percent: int = 18,
     logo_margin: int = 70,
+    title_x: float = 50.0,
+    title_y: float = 38.0,
+    body_x: float = 50.0,
+    body_y: float = 58.0,
+    footer_x: float = 50.0,
+    footer_y: float = 90.0,
 ) -> Path:
     """
     Generate a 1920x1080 PNG sign and return its path.
@@ -369,105 +376,61 @@ def create_sign_slide(
         content_width,
     ) if body else []
 
-    title_line_height = title_font.size + 22
-    body_line_height = body_font.size + 22
+    def draw_positioned_block(lines, *, font, x_percent, y_percent, line_spacing):
+        if not lines:
+            return None
+        sizes = [_measure_text(draw, line, font) for line in lines]
+        heights = [max(height, font.size) for _, height in sizes]
+        block_height = sum(heights) + line_spacing * max(0, len(lines) - 1)
+        anchor_x = int(SLIDE_WIDTH * (float(x_percent) / 100.0))
+        start_y = int(SLIDE_HEIGHT * (float(y_percent) / 100.0) - block_height / 2)
+        start_y = max(30, min(SLIDE_HEIGHT - block_height - 30, start_y))
+        current_y = start_y
+        min_x, max_x = SLIDE_WIDTH, 0
 
-    title_block_height = len(title_lines) * title_line_height
-    body_block_height = len(body_lines) * body_line_height
+        for index, line in enumerate(lines):
+            width = sizes[index][0]
+            if normalized_alignment == "left":
+                x_position = anchor_x
+            elif normalized_alignment == "right":
+                x_position = anchor_x - width
+            else:
+                x_position = anchor_x - width // 2
+            x_position = max(30, min(SLIDE_WIDTH - width - 30, x_position))
+            draw.text((x_position, current_y), line, font=font, fill=text_color)
+            min_x = min(min_x, x_position)
+            max_x = max(max_x, x_position + width)
+            current_y += heights[index] + line_spacing
 
-    block_spacing = 55 if title_lines and body_lines else 0
+        return min_x, start_y, max_x, current_y
 
-    available_top = 130
-    available_bottom = 890 if footer else 970
-    available_height = available_bottom - available_top
-
-    total_height = (
-        title_block_height
-        + block_spacing
-        + body_block_height
+    title_box = draw_positioned_block(
+        title_lines, font=title_font, x_percent=title_x,
+        y_percent=title_y, line_spacing=22,
+    )
+    body_box = draw_positioned_block(
+        body_lines, font=body_font, x_percent=body_x,
+        y_percent=body_y, line_spacing=22,
     )
 
-    start_y = available_top + max(
-        0,
-        (available_height - total_height) // 2,
-    )
-
-    if title_lines:
-        start_y = _draw_centered_lines(
-            draw,
-            title_lines,
-            font=title_font,
-            fill=text_color,
-            center_x=center_x,
-            start_y=start_y,
-            line_spacing=22,
-            alignment=normalized_alignment,
-            left_margin=left_margin,
-            right_margin=right_margin,
-        )
-
-    if title_lines and body_lines:
-        start_y += block_spacing
-
-        # Decorative divider beneath the title.
+    if show_divider and title_box and body_box:
         divider_width = 420
-        divider_left = center_x - (divider_width // 2)
-
+        divider_center_x = int(SLIDE_WIDTH * (float(title_x) / 100.0))
+        divider_left = max(30, min(
+            SLIDE_WIDTH - divider_width - 30,
+            divider_center_x - divider_width // 2,
+        ))
+        divider_y = min(SLIDE_HEIGHT - 40, title_box[3] + 28)
         draw.rounded_rectangle(
-            (
-                divider_left,
-                start_y - 30,
-                divider_left + divider_width,
-                start_y - 20,
-            ),
-            radius=5,
-            fill=accent_color,
-        )
-
-    if body_lines:
-        _draw_centered_lines(
-            draw,
-            body_lines,
-            font=body_font,
-            fill=text_color,
-            center_x=center_x,
-            start_y=start_y,
-            line_spacing=22,
-            alignment=normalized_alignment,
-            left_margin=left_margin,
-            right_margin=right_margin,
+            (divider_left, divider_y, divider_left + divider_width, divider_y + 10),
+            radius=5, fill=accent_color,
         )
 
     if footer:
-        footer_lines = _wrap_text_to_width(
-            draw,
-            footer,
-            footer_font,
-            content_width,
-        )
-
-        footer_y = SLIDE_HEIGHT - 120
-
-        for line in reversed(footer_lines):
-            _, line_height = _measure_text(
-                draw,
-                line,
-                footer_font,
-            )
-
-            footer_y -= max(line_height, footer_font.size) + 8
-
-        _draw_centered_lines(
-            draw,
-            footer_lines,
-            font=footer_font,
-            fill=text_color,
-            center_x=center_x,
-            start_y=footer_y,
-            line_spacing=8,
-            alignment=normalized_alignment,
-            left_margin=left_margin,
-            right_margin=right_margin,
+        footer_lines = _wrap_text_to_width(draw, footer, footer_font, content_width)
+        draw_positioned_block(
+            footer_lines, font=footer_font, x_percent=footer_x,
+            y_percent=footer_y, line_spacing=8,
         )
 
     try:

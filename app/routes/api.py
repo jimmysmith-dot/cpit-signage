@@ -265,6 +265,13 @@ def create_slide():
         data.get("alignment", "center")
     ).strip().lower()
 
+    show_divider = data.get("show_divider", True)
+
+    if not isinstance(show_divider, bool):
+       show_divider = str(show_divider).strip().lower() in {
+           "true", "1", "yes", "on"
+       }
+
     duration_value = data.get("duration", 10)
     background_media_id = data.get("background_media_id")
     background_pack_asset = str(
@@ -282,6 +289,21 @@ def create_slide():
 
     logo_width_value = data.get("logo_width_percent", 18)
     logo_margin_value = data.get("logo_margin", 70)
+
+    position_defaults = {
+        "title_x": 50.0, "title_y": 38.0,
+        "body_x": 50.0, "body_y": 58.0,
+        "footer_x": 50.0, "footer_y": 90.0,
+    }
+    text_positions = {}
+    for field, default in position_defaults.items():
+        try:
+            value = float(data.get(field, default))
+        except (TypeError, ValueError):
+            return jsonify({"error": f"{field} must be a number"}), 400
+        if value < 0 or value > 100:
+            return jsonify({"error": f"{field} must be between 0 and 100"}), 400
+        text_positions[field] = value
 
     if not title and not body:
         return jsonify({
@@ -463,12 +485,19 @@ def create_slide():
             text_color=text_color,
             accent_color=accent_color,
             alignment=alignment,
+            show_divider=show_divider,
             background_image_path=background_image_path,
             overlay_opacity=overlay_opacity,
             logo_path=logo_path,
             logo_position=logo_position,
             logo_width_percent=logo_width_percent,
             logo_margin=logo_margin,
+            title_x=text_positions["title_x"],
+            title_y=text_positions["title_y"],
+            body_x=text_positions["body_x"],
+            body_y=text_positions["body_y"],
+            footer_x=text_positions["footer_x"],
+            footer_y=text_positions["footer_y"],
         )
 
         record = create_media_item(

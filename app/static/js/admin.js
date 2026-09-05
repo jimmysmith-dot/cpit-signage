@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const textHex = document.getElementById("sign-text-hex");
     const accentColor = document.getElementById("sign-accent-color");
     const accentHex = document.getElementById("sign-accent-hex");
+    const showDivider = document.getElementById("sign-show-divider");
 
     const backgroundModeColor = document.getElementById(
         "background-mode-color"
@@ -138,6 +139,57 @@ document.addEventListener("DOMContentLoaded", () => {
     let signTemplates = [];
     let logoLibrary = [];
     let selectedLogoFilename = "";
+    let previewTextPositions = {
+        title: { x: 50, y: 38 },
+        body: { x: 50, y: 58 },
+        footer: { x: 50, y: 90 }
+    };
+
+    function applyPreviewTextPosition(element, position) {
+        if (!element || !position) return;
+        element.style.left = `${position.x}%`;
+        element.style.top = `${position.y}%`;
+    }
+
+    function applyAllPreviewTextPositions() {
+        applyPreviewTextPosition(previewTitle, previewTextPositions.title);
+        applyPreviewTextPosition(previewBody, previewTextPositions.body);
+        applyPreviewTextPosition(previewFooter, previewTextPositions.footer);
+    }
+
+    function makePreviewTextDraggable(element, fieldName) {
+        if (!element || !signPreview) return;
+        element.addEventListener("pointerdown", (event) => {
+            if (event.button !== undefined && event.button !== 0) return;
+            event.preventDefault();
+            element.setPointerCapture?.(event.pointerId);
+            element.classList.add("dragging");
+            const move = (e) => {
+                const r = signPreview.getBoundingClientRect();
+                if (!r.width || !r.height) return;
+                const x = Math.max(5, Math.min(95, ((e.clientX-r.left)/r.width)*100));
+                const y = Math.max(5, Math.min(95, ((e.clientY-r.top)/r.height)*100));
+                previewTextPositions[fieldName] = {x, y};
+                applyPreviewTextPosition(element, previewTextPositions[fieldName]);
+            };
+            const finish = () => {
+                element.classList.remove("dragging");
+                element.removeEventListener("pointermove", move);
+                element.removeEventListener("pointerup", finish);
+                element.removeEventListener("pointercancel", finish);
+            };
+            element.addEventListener("pointermove", move);
+            element.addEventListener("pointerup", finish);
+            element.addEventListener("pointercancel", finish);
+        });
+    }
+
+    function initializePreviewTextDragging() {
+        makePreviewTextDraggable(previewTitle, "title");
+        makePreviewTextDraggable(previewBody, "body");
+        makePreviewTextDraggable(previewFooter, "footer");
+        applyAllPreviewTextPositions();
+    }
 
     const DEFAULT_SIGN = {
         title: "Lobby Remodel Update",
@@ -627,6 +679,17 @@ document.addEventListener("DOMContentLoaded", () => {
         signFooter.value = template.footer || "";
         signAlignment.value = template.alignment || "center";
         signDuration.value = String(template.duration || 10);
+
+        previewTextPositions = {
+            title: { x: Number(template.title_x ?? 50), y: Number(template.title_y ?? 38) },
+            body: { x: Number(template.body_x ?? 50), y: Number(template.body_y ?? 58) },
+            footer: { x: Number(template.footer_x ?? 50), y: Number(template.footer_y ?? 90) }
+        };
+        applyAllPreviewTextPositions();
+
+       if (showDivider) {
+           showDivider.checked = template.show_divider !== false;
+       }
 
         setColorControls(
             backgroundColor,
@@ -1143,6 +1206,7 @@ document.addEventListener("DOMContentLoaded", () => {
             body: signBody ? signBody.value.trim() : "",
             footer: signFooter ? signFooter.value.trim() : "",
             alignment: signAlignment ? signAlignment.value : "center",
+            showDivider: showDivider ? showDivider.checked : true,
             duration: signDuration
                 ? Number.parseInt(signDuration.value, 10)
                 : 10,
@@ -1194,7 +1258,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 : DEFAULT_SIGN.logoWidthPercent,
             logoMargin: logoMargin
                 ? Number.parseInt(logoMargin.value, 10)
-                : DEFAULT_SIGN.logoMargin
+                : DEFAULT_SIGN.logoMargin,
+            titleX: previewTextPositions.title.x,
+            titleY: previewTextPositions.title.y,
+            bodyX: previewTextPositions.body.x,
+            bodyY: previewTextPositions.body.y,
+            footerX: previewTextPositions.footer.x,
+            footerY: previewTextPositions.footer.y
         };
     }
 
@@ -1268,13 +1338,15 @@ document.addEventListener("DOMContentLoaded", () => {
         previewAccent.style.backgroundColor = values.accentColor;
         previewDivider.style.backgroundColor = values.accentColor;
         previewContent.style.textAlign = values.alignment;
+        previewTitle.style.textAlign = values.alignment;
+        previewBody.style.textAlign = values.alignment;
         previewFooter.style.textAlign = values.alignment;
 
         previewTitle.textContent = values.title || "Your title will appear here";
         previewBody.textContent = values.body || "Your message will appear here.";
         previewFooter.textContent = values.footer;
         previewFooter.hidden = !values.footer;
-        previewDivider.classList.toggle("hidden", !values.title || !values.body);
+        previewDivider.classList.toggle("hidden", !values.showDivider || !values.title || !values.body);
     }
 
     function resetSignDesigner() {
@@ -1417,6 +1489,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 text_color: values.textColor,
                 accent_color: values.accentColor,
                 alignment: values.alignment,
+                show_divider: values.showDivider,
                 duration: values.duration,
                 background_media_id:
                     values.backgroundMode === "image"
@@ -1430,7 +1503,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 logo_filename: values.logoFilename,
                 logo_position: values.logoPosition,
                 logo_width_percent: values.logoWidthPercent,
-                logo_margin: values.logoMargin
+                logo_margin: values.logoMargin,
+                title_x: values.titleX,
+                title_y: values.titleY,
+                body_x: values.bodyX,
+                body_y: values.bodyY,
+                footer_x: values.footerX,
+                footer_y: values.footerY
             })
         });
 
@@ -1453,7 +1532,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (createSignForm) {
-        [signTitle, signBody, signFooter, signAlignment, signDuration].forEach((element) => {
+        [
+         signTitle,
+         signBody,
+         signFooter,
+         signAlignment,
+         signDuration,
+         showDivider
+        ].forEach((element) => {
+            if (!element) {
+                return;
+            }
             element.addEventListener("input", updateSignPreview);
             element.addEventListener("change", updateSignPreview);
         });
@@ -1567,6 +1656,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     loadTemplatePacks();
 
+    initializePreviewTextDragging();
     initializeWorkspaces();
     loadSignTemplates();
     loadLogoLibrary();

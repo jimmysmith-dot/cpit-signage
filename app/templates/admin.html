@@ -154,12 +154,15 @@
         .preview-shell { position: sticky; top: 18px; }
         .preview-frame { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16/9; border: 1px solid #aeb9c4; border-radius: 10px; background: #153a5b; box-shadow: 0 14px 34px rgba(31,41,51,.18); }
         .preview-accent { position: absolute; inset: 0 0 auto; height: 10px; background: #75b9e6; }
-        .preview-content { position: absolute; inset: 9% 8% 10%; display: flex; flex-direction: column; justify-content: center; color: #fff; text-align: center; }
-        .preview-title { margin: 0; font-size: clamp(1.2rem,3vw,2.4rem); font-weight: 850; line-height: 1.08; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .preview-divider { width: 24%; height: 5px; margin: 6% auto 5%; border-radius: 99px; background: #75b9e6; }
+        .preview-content { position: absolute; inset: 0; z-index: 5; color: #fff; pointer-events: none; }
+        .preview-draggable { position: absolute; margin: 0; width: 84%; transform: translate(-50%,-50%); white-space: pre-wrap; overflow-wrap: anywhere; cursor: grab; user-select: none; touch-action: none; pointer-events: auto; }
+        .preview-draggable:hover { outline: 2px dashed rgba(255,255,255,.7); outline-offset: 5px; }
+        .preview-draggable.dragging { cursor: grabbing; outline: 2px solid rgba(255,255,255,.9); outline-offset: 5px; }
+        .preview-title { left: 50%; top: 38%; font-size: clamp(1.2rem,3vw,2.4rem); font-weight: 850; line-height: 1.08; text-align: center; }
+        .preview-divider { position: absolute; left: 38%; top: 47%; width: 24%; height: 5px; border-radius: 99px; background: #75b9e6; pointer-events: none; }
         .preview-divider.hidden { display: none; }
-        .preview-body { margin: 0; font-size: clamp(.78rem,1.7vw,1.35rem); line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
-        .preview-footer { position: absolute; right: 8%; bottom: 6%; left: 8%; margin: 0; color: inherit; font-size: clamp(.58rem,1.15vw,.95rem); line-height: 1.3; text-align: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+        .preview-body { left: 50%; top: 58%; font-size: clamp(.78rem,1.7vw,1.35rem); line-height: 1.35; text-align: center; }
+        .preview-footer { left: 50%; top: 90%; color: inherit; font-size: clamp(.58rem,1.15vw,.95rem); line-height: 1.3; text-align: center; white-space: pre-wrap; overflow-wrap: anywhere; }
         .preview-note { margin: 13px 0 0; color: var(--muted); font-size: .9rem; }
         .upload-zone { padding: 38px 20px; border: 2px dashed #8da2b5; border-radius: 8px; background: #f8fafc; text-align: center; cursor: pointer; }
         .upload-zone:hover, .upload-zone.drag-active { border-color: var(--primary); background: #edf5fc; }
@@ -555,6 +558,13 @@
                         <div class="form-field"><label>Text</label><div class="color-control"><input id="sign-text-color" type="color" value="#ffffff"><input id="sign-text-hex" type="text" value="#FFFFFF" maxlength="7"></div></div>
                         <div class="form-field"><label>Accent</label><div class="color-control"><input id="sign-accent-color" type="color" value="#75b9e6"><input id="sign-accent-hex" type="text" value="#75B9E6" maxlength="7"></div></div>
                     </div>
+                        <div class="form-field">
+                            <label>
+                                <input id="sign-show-divider" type="checkbox" checked>
+                                Show Divider
+                            </label>
+                        </div>
+
                     <div class="designer-actions">
                         <button id="create-sign-button" type="submit">Publish Sign</button>
                         <button id="reset-sign-button" class="secondary" type="button">Clear Designer</button>
@@ -583,8 +593,12 @@
                         alt="Selected logo preview"
                     >
                     <div id="preview-accent" class="preview-accent"></div>
-                    <div id="preview-content" class="preview-content"><h3 id="preview-title" class="preview-title">Lobby Remodel Update</h3><div id="preview-divider" class="preview-divider"></div><p id="preview-body" class="preview-body">Our lobby renovation begins soon. Thank you for your patience.</p></div>
-                    <p id="preview-footer" class="preview-footer">We appreciate you staying with us.</p>
+                    <div id="preview-content" class="preview-content">
+                        <h3 id="preview-title" class="preview-title preview-draggable">Lobby Remodel Update</h3>
+                        <div id="preview-divider" class="preview-divider"></div>
+                        <p id="preview-body" class="preview-body preview-draggable">Our lobby renovation begins soon. Thank you for your patience.</p>
+                        <p id="preview-footer" class="preview-footer preview-draggable">We appreciate you staying with us.</p>
+                    </div>
                 </div>
                 <p class="preview-note">The server renders the final slide as a full-size 1920 × 1080 PNG.</p>
             </div>

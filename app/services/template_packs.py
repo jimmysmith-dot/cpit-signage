@@ -15,7 +15,8 @@ PACKS_DIR = PROJECT_ROOT / "packs"
 SUPPORTED_TEMPLATE_FIELDS = {
     "id", "name", "description", "title", "body", "footer",
     "background_color", "text_color", "accent_color", "alignment",
-    "overlay_opacity", "duration", "background_asset",
+    "overlay_opacity", "duration", "background_asset", "show_divider",
+    "title_x", "title_y", "body_x", "body_y", "footer_x", "footer_y",
 }
 
 REQUIRED_TEMPLATE_FIELDS = {"id", "name"}
@@ -133,6 +134,13 @@ def _validate_template(template, manifest: dict) -> dict:
     normalized.setdefault("alignment", "center")
     normalized.setdefault("overlay_opacity", 35)
     normalized.setdefault("duration", 10)
+    normalized.setdefault("show_divider", True)
+    normalized.setdefault("title_x", 50)
+    normalized.setdefault("title_y", 38)
+    normalized.setdefault("body_x", 50)
+    normalized.setdefault("body_y", 58)
+    normalized.setdefault("footer_x", 50)
+    normalized.setdefault("footer_y", 90)
 
     background_asset = str(
         normalized.get("background_asset", "")
@@ -178,6 +186,10 @@ def _validate_template(template, manifest: dict) -> dict:
             normalized["overlay_opacity"]
         )
         normalized["duration"] = int(normalized["duration"])
+        for field in ("title_x", "title_y", "body_x", "body_y", "footer_x", "footer_y"):
+            normalized[field] = float(normalized[field])
+            if not 0 <= normalized[field] <= 100:
+                raise ValueError(f"{field} is outside 0-100")
     except (TypeError, ValueError) as error:
         raise TemplatePackError(
             f"Template '{normalized['id']}' has invalid numeric fields."
