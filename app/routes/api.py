@@ -3,6 +3,8 @@ import tempfile
 from uuid import uuid4
 
 from flask import Blueprint, jsonify, request, send_from_directory
+
+from app.services.auth import is_authenticated
 from PIL import Image, UnidentifiedImageError
 from werkzeug.utils import secure_filename
 
@@ -44,6 +46,14 @@ from app.services.logo_tools import (
 )
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
+
+
+@api_bp.before_request
+def require_authentication_for_writes():
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and not is_authenticated():
+        return jsonify({"error": "Authentication required"}), 401
+
+    return None
 
 ALLOWED_IMAGE_EXTENSIONS = {
     ".jpg",
