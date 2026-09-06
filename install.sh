@@ -101,25 +101,43 @@ echo "Destination: ${APP_DIR}"
 echo "Kiosk user:  ${CPIT_USER}"
 echo "================================================"
 
+step "Detecting desktop session"
+DESKTOP_SESSION_NAME="xfce"
+KIOSK_SESSION_TYPE="x11"
+
+if [[ -f /usr/share/wayland-sessions/rpd-labwc.desktop ]] && command -v labwc >/dev/null 2>&1; then
+    DESKTOP_SESSION_NAME="rpd-labwc"
+    KIOSK_SESSION_TYPE="wayland"
+    ok "Detected Raspberry Pi Labwc/Wayland desktop"
+else
+    ok "Using XFCE/X11 desktop"
+fi
+
 step "Installing operating-system dependencies"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y \
-    python3 \
-    python3-venv \
-    python3-pip \
-    chromium \
-    lightdm \
-    xfce4 \
-    unclutter \
-    x11-xserver-utils \
-    curl \
-    git \
-    rsync \
-    sqlite3 \
-    unzip \
-    fonts-dejavu-core \
+
+COMMON_PACKAGES=(
+    python3
+    python3-venv
+    python3-pip
+    chromium
+    lightdm
+    curl
+    git
+    rsync
+    sqlite3
+    unzip
+    fonts-dejavu-core
     fonts-liberation
+)
+
+if [[ "${KIOSK_SESSION_TYPE}" == "wayland" ]]; then
+    apt-get install -y "${COMMON_PACKAGES[@]}" wlopm
+else
+    apt-get install -y "${COMMON_PACKAGES[@]}" xfce4 unclutter x11-xserver-utils
+fi
+
 ok "Dependencies installed"
 
 step "Stopping any existing service"
@@ -325,6 +343,7 @@ PY
         mkdir -p /etc/lightdm/lightdm.conf.d
         sed \
             -e "s/@CPIT_USER@/${CPIT_USER}/g" \
+            -e "s/@CPIT_SESSION@/${DESKTOP_SESSION_NAME}/g" \
             "${APP_DIR}/deployment/50-autologin.conf" \
             > /etc/lightdm/lightdm.conf.d/50-cpit-signage-autologin.conf
 
