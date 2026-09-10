@@ -1,3 +1,4 @@
+from pathlib import Path
 from urllib.parse import urlparse
 
 from flask import (
@@ -17,7 +18,13 @@ from app.services.auth import (
 from app.services.database import get_all_media, update_media_item
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+def _get_build_version():
+    version_file = Path(__file__).resolve().parents[2] / 'VERSION'
 
+    try:
+        return version_file.read_text(encoding='utf-8').strip()
+    except (OSError, UnicodeError):
+        return 'Unknown'
 
 def _safe_next_url(value):
     if not value:
@@ -92,6 +99,7 @@ def admin():
         'admin.html',
         media_items=media_items,
         saved=request.args.get('saved') == '1',
+        build_version=_get_build_version(),
     )
 
 

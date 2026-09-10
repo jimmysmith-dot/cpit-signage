@@ -155,7 +155,12 @@
         .preview-frame { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16/9; border: 1px solid #aeb9c4; border-radius: 10px; background: #153a5b; box-shadow: 0 14px 34px rgba(31,41,51,.18); }
         .preview-accent { position: absolute; inset: 0 0 auto; height: 10px; background: #75b9e6; }
         .preview-content { position: absolute; inset: 0; z-index: 5; color: #fff; pointer-events: none; }
-        .preview-draggable { position: absolute; margin: 0; width: 84%; transform: translate(-50%,-50%); white-space: pre-wrap; overflow-wrap: anywhere; cursor: grab; user-select: none; touch-action: none; pointer-events: auto; }
+        .preview-draggable { position: absolute; margin: 0; width: 84%; box-sizing: border-box; font-family: Arial, "Liberation Sans", sans-serif; transform: translate(-50%,-50%); white-space: pre-wrap; overflow-wrap: anywhere; cursor: grab; user-select: none; touch-action: none; pointer-events: auto; }
+        .typography-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .typography-controls label { display: inline-flex; gap: 6px; align-items: center; margin: 0; }
+        .typography-controls input[type="number"] { width: 78px; }
+        .text-style-toggle { min-width: 38px; min-height: 34px; cursor: pointer; }
+        .text-style-toggle.active { box-shadow: inset 0 0 0 2px currentColor; }
         .preview-draggable:hover { outline: 2px dashed rgba(255,255,255,.7); outline-offset: 5px; }
         .preview-draggable.dragging { cursor: grabbing; outline: 2px solid rgba(255,255,255,.9); outline-offset: 5px; }
         .preview-title { left: 50%; top: 38%; font-size: clamp(1.2rem,3vw,2.4rem); font-weight: 850; line-height: 1.08; text-align: center; }
@@ -206,7 +211,7 @@
         </div>
     </div>
     <div class="status-strip">
-        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v1.0.1</span></div>
+        <div class="status-card"><span class="status-label">Build</span><span class="status-value">v{{ build_version }}</span></div>
         <div class="status-card"><span class="status-label">Player</span><span class="status-value"><span class="online-dot"></span>Online</span></div>
         <div class="status-card"><span class="status-label">Media Items</span><span id="media-count" class="status-value">{{ media_items | selectattr('asset_type', 'equalto', 'playlist') | list | length }}</span></div>
         <div class="status-card"><span class="status-label">Page Loaded</span><span id="page-loaded-time" class="status-value">—</span></div>
@@ -447,9 +452,9 @@
                         </div>
 
                         <div class="section-heading">Message</div>
-                        <div class="form-field full"><label for="sign-title">Title</label><input id="sign-title" type="text" maxlength="250" placeholder="Lobby Remodel Update"></div>
-                        <div class="form-field full"><label for="sign-body">Message</label><textarea id="sign-body" maxlength="2000" placeholder="Our lobby renovation begins soon. Thank you for your patience."></textarea></div>
-                        <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><small>Optional closing line shown near the bottom.</small></div>
+                        <div class="form-field full"><label for="sign-title">Title</label><input id="sign-title" type="text" maxlength="250" placeholder="Lobby Remodel Update"><div class="typography-controls"><label>Size <input id="title-font-size" type="number" min="16" max="160" value="104"></label><button id="title-bold" type="button" class="text-style-toggle active" aria-pressed="true"><strong>B</strong></button><button id="title-italic" type="button" class="text-style-toggle" aria-pressed="false"><em>I</em></button><button id="title-underline" type="button" class="text-style-toggle" aria-pressed="false"><u>U</u></button></div></div>
+                        <div class="form-field full"><label for="sign-body">Message</label><textarea id="sign-body" maxlength="2000" placeholder="Our lobby renovation begins soon. Thank you for your patience."></textarea><div class="typography-controls"><label>Size <input id="body-font-size" type="number" min="16" max="160" value="60"></label><button id="body-bold" type="button" class="text-style-toggle" aria-pressed="false"><strong>B</strong></button><button id="body-italic" type="button" class="text-style-toggle" aria-pressed="false"><em>I</em></button><button id="body-underline" type="button" class="text-style-toggle" aria-pressed="false"><u>U</u></button></div></div>
+                        <div class="form-field full"><label for="sign-footer">Footer</label><input id="sign-footer" type="text" maxlength="500" placeholder="We appreciate you staying with us."><div class="typography-controls"><label>Size <input id="footer-font-size" type="number" min="16" max="160" value="38"></label><button id="footer-bold" type="button" class="text-style-toggle" aria-pressed="false"><strong>B</strong></button><button id="footer-italic" type="button" class="text-style-toggle" aria-pressed="false"><em>I</em></button><button id="footer-underline" type="button" class="text-style-toggle" aria-pressed="false"><u>U</u></button></div><small>Optional closing line shown near the bottom.</small></div>
                         <div class="form-field"><label for="sign-alignment">Alignment</label><select id="sign-alignment"><option value="left">Left</option><option value="center" selected>Center</option><option value="right">Right</option></select></div>
                         <div class="form-field"><label for="sign-duration">Duration</label><input id="sign-duration" type="number" min="1" max="3600" value="10" required><small>Seconds on screen.</small></div>
                         <div class="section-heading">Appearance</div>

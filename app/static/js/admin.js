@@ -91,6 +91,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const signFooter = document.getElementById("sign-footer");
     const signAlignment = document.getElementById("sign-alignment");
     const signDuration = document.getElementById("sign-duration");
+    const titleFontSize = document.getElementById("title-font-size");
+    const titleBold = document.getElementById("title-bold");
+    const titleItalic = document.getElementById("title-italic");
+    const titleUnderline = document.getElementById("title-underline");
+    const bodyFontSize = document.getElementById("body-font-size");
+    const bodyBold = document.getElementById("body-bold");
+    const bodyItalic = document.getElementById("body-italic");
+    const bodyUnderline = document.getElementById("body-underline");
+    const footerFontSize = document.getElementById("footer-font-size");
+    const footerBold = document.getElementById("footer-bold");
+    const footerItalic = document.getElementById("footer-italic");
+    const footerUnderline = document.getElementById("footer-underline");
 
     const backgroundColor = document.getElementById("sign-background-color");
     const backgroundHex = document.getElementById("sign-background-hex");
@@ -206,7 +218,10 @@ document.addEventListener("DOMContentLoaded", () => {
         logoFilename: "",
         logoPosition: "top-right",
         logoWidthPercent: 18,
-        logoMargin: 70
+        logoMargin: 70,
+        titleFontSize: 104, titleBold: true, titleItalic: false, titleUnderline: false,
+        bodyFontSize: 60, bodyBold: false, bodyItalic: false, bodyUnderline: false,
+        footerFontSize: 38, footerBold: false, footerItalic: false, footerUnderline: false
     };
 
     if (pageLoadedTime) {
@@ -679,6 +694,18 @@ document.addEventListener("DOMContentLoaded", () => {
         signFooter.value = template.footer || "";
         signAlignment.value = template.alignment || "center";
         signDuration.value = String(template.duration || 10);
+        titleFontSize.value = String(template.title_font_size ?? DEFAULT_SIGN.titleFontSize);
+        bodyFontSize.value = String(template.body_font_size ?? DEFAULT_SIGN.bodyFontSize);
+        footerFontSize.value = String(template.footer_font_size ?? DEFAULT_SIGN.footerFontSize);
+        setTextToggle(titleBold, template.title_bold ?? DEFAULT_SIGN.titleBold);
+        setTextToggle(titleItalic, template.title_italic ?? false);
+        setTextToggle(titleUnderline, template.title_underline ?? false);
+        setTextToggle(bodyBold, template.body_bold ?? false);
+        setTextToggle(bodyItalic, template.body_italic ?? false);
+        setTextToggle(bodyUnderline, template.body_underline ?? false);
+        setTextToggle(footerBold, template.footer_bold ?? false);
+        setTextToggle(footerItalic, template.footer_italic ?? false);
+        setTextToggle(footerUnderline, template.footer_underline ?? false);
 
         previewTextPositions = {
             title: { x: Number(template.title_x ?? 50), y: Number(template.title_y ?? 38) },
@@ -1200,6 +1227,34 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function setTextToggle(button, on) {
+        if (!button) return;
+        button.setAttribute("aria-pressed", on ? "true" : "false");
+        button.classList.toggle("active", Boolean(on));
+    }
+
+    function textToggleOn(button) {
+        return Boolean(button && button.getAttribute("aria-pressed") === "true");
+    }
+
+    function setupTextToggle(button) {
+        if (!button) return;
+        button.addEventListener("click", () => {
+            setTextToggle(button, !textToggleOn(button));
+            updateSignPreview();
+        });
+    }
+
+    function applyTextStyle(element, size, bold, italic, underline) {
+        if (!element || !signPreview) return;
+        const previewWidth = signPreview.getBoundingClientRect().width || 768;
+        const scale = previewWidth / 1920;
+        element.style.fontSize = `${Math.max(8, Number(size) * scale)}px`;
+        element.style.fontWeight = bold ? "700" : "400";
+        element.style.fontStyle = italic ? "italic" : "normal";
+        element.style.textDecoration = underline ? "underline" : "none";
+    }
+
     function getSignValues() {
         return {
             title: signTitle ? signTitle.value.trim() : "",
@@ -1264,7 +1319,19 @@ document.addEventListener("DOMContentLoaded", () => {
             bodyX: previewTextPositions.body.x,
             bodyY: previewTextPositions.body.y,
             footerX: previewTextPositions.footer.x,
-            footerY: previewTextPositions.footer.y
+            footerY: previewTextPositions.footer.y,
+            titleFontSize: Number.parseInt(titleFontSize.value, 10),
+            titleBold: textToggleOn(titleBold),
+            titleItalic: textToggleOn(titleItalic),
+            titleUnderline: textToggleOn(titleUnderline),
+            bodyFontSize: Number.parseInt(bodyFontSize.value, 10),
+            bodyBold: textToggleOn(bodyBold),
+            bodyItalic: textToggleOn(bodyItalic),
+            bodyUnderline: textToggleOn(bodyUnderline),
+            footerFontSize: Number.parseInt(footerFontSize.value, 10),
+            footerBold: textToggleOn(footerBold),
+            footerItalic: textToggleOn(footerItalic),
+            footerUnderline: textToggleOn(footerUnderline)
         };
     }
 
@@ -1342,6 +1409,18 @@ document.addEventListener("DOMContentLoaded", () => {
         previewBody.style.textAlign = values.alignment;
         previewFooter.style.textAlign = values.alignment;
 
+        const transform = values.alignment === "left"
+            ? "translate(0, -50%)"
+            : values.alignment === "right"
+                ? "translate(-100%, -50%)"
+                : "translate(-50%, -50%)";
+        [previewTitle, previewBody, previewFooter].forEach((element) => {
+            if (element) element.style.transform = transform;
+        });
+        applyTextStyle(previewTitle, values.titleFontSize, values.titleBold, values.titleItalic, values.titleUnderline);
+        applyTextStyle(previewBody, values.bodyFontSize, values.bodyBold, values.bodyItalic, values.bodyUnderline);
+        applyTextStyle(previewFooter, values.footerFontSize, values.footerBold, values.footerItalic, values.footerUnderline);
+
         previewTitle.textContent = values.title || "Your title will appear here";
         previewBody.textContent = values.body || "Your message will appear here.";
         previewFooter.textContent = values.footer;
@@ -1371,6 +1450,18 @@ document.addEventListener("DOMContentLoaded", () => {
         signFooter.value = "";
         signAlignment.value = DEFAULT_SIGN.alignment;
         signDuration.value = String(DEFAULT_SIGN.duration);
+        titleFontSize.value = String(DEFAULT_SIGN.titleFontSize);
+        bodyFontSize.value = String(DEFAULT_SIGN.bodyFontSize);
+        footerFontSize.value = String(DEFAULT_SIGN.footerFontSize);
+        setTextToggle(titleBold, DEFAULT_SIGN.titleBold);
+        setTextToggle(titleItalic, DEFAULT_SIGN.titleItalic);
+        setTextToggle(titleUnderline, DEFAULT_SIGN.titleUnderline);
+        setTextToggle(bodyBold, DEFAULT_SIGN.bodyBold);
+        setTextToggle(bodyItalic, DEFAULT_SIGN.bodyItalic);
+        setTextToggle(bodyUnderline, DEFAULT_SIGN.bodyUnderline);
+        setTextToggle(footerBold, DEFAULT_SIGN.footerBold);
+        setTextToggle(footerItalic, DEFAULT_SIGN.footerItalic);
+        setTextToggle(footerUnderline, DEFAULT_SIGN.footerUnderline);
 
         backgroundColor.value = DEFAULT_SIGN.backgroundColor.toLowerCase();
         backgroundHex.value = DEFAULT_SIGN.backgroundColor;
@@ -1474,6 +1565,16 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         }
 
+        for (const [label, size] of [
+            ["Title", values.titleFontSize],
+            ["Message", values.bodyFontSize],
+            ["Footer", values.footerFontSize]
+        ]) {
+            if (!Number.isInteger(size) || size < 16 || size > 160) {
+                throw new Error(`${label} font size must be between 16 and 160 pixels.`);
+            }
+        }
+
         setStatus(createSignStatus, "Generating sign...");
         createSignButton.disabled = true;
         createSignButton.textContent = "Publishing...";
@@ -1509,7 +1610,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 body_x: values.bodyX,
                 body_y: values.bodyY,
                 footer_x: values.footerX,
-                footer_y: values.footerY
+                footer_y: values.footerY,
+                title_font_size: values.titleFontSize,
+                title_bold: values.titleBold,
+                title_italic: values.titleItalic,
+                title_underline: values.titleUnderline,
+                body_font_size: values.bodyFontSize,
+                body_bold: values.bodyBold,
+                body_italic: values.bodyItalic,
+                body_underline: values.bodyUnderline,
+                footer_font_size: values.footerFontSize,
+                footer_bold: values.footerBold,
+                footer_italic: values.footerItalic,
+                footer_underline: values.footerUnderline
             })
         });
 
@@ -1538,7 +1651,8 @@ document.addEventListener("DOMContentLoaded", () => {
          signFooter,
          signAlignment,
          signDuration,
-         showDivider
+         showDivider,
+         titleFontSize, bodyFontSize, footerFontSize
         ].forEach((element) => {
             if (!element) {
                 return;
@@ -1655,6 +1769,12 @@ document.addEventListener("DOMContentLoaded", () => {
         templatePackFile.addEventListener("change", installSelectedTemplatePack);
     }
     loadTemplatePacks();
+
+    [
+        titleBold, titleItalic, titleUnderline,
+        bodyBold, bodyItalic, bodyUnderline,
+        footerBold, footerItalic, footerUnderline
+    ].forEach(setupTextToggle);
 
     initializePreviewTextDragging();
     initializeWorkspaces();

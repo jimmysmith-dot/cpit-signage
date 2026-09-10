@@ -17,6 +17,9 @@ SUPPORTED_TEMPLATE_FIELDS = {
     "background_color", "text_color", "accent_color", "alignment",
     "overlay_opacity", "duration", "background_asset", "show_divider",
     "title_x", "title_y", "body_x", "body_y", "footer_x", "footer_y",
+    "title_font_size", "title_bold", "title_italic", "title_underline",
+    "body_font_size", "body_bold", "body_italic", "body_underline",
+    "footer_font_size", "footer_bold", "footer_italic", "footer_underline",
 }
 
 REQUIRED_TEMPLATE_FIELDS = {"id", "name"}
@@ -141,6 +144,18 @@ def _validate_template(template, manifest: dict) -> dict:
     normalized.setdefault("body_y", 58)
     normalized.setdefault("footer_x", 50)
     normalized.setdefault("footer_y", 90)
+    normalized.setdefault("title_font_size", 104)
+    normalized.setdefault("title_bold", True)
+    normalized.setdefault("title_italic", False)
+    normalized.setdefault("title_underline", False)
+    normalized.setdefault("body_font_size", 60)
+    normalized.setdefault("body_bold", False)
+    normalized.setdefault("body_italic", False)
+    normalized.setdefault("body_underline", False)
+    normalized.setdefault("footer_font_size", 38)
+    normalized.setdefault("footer_bold", False)
+    normalized.setdefault("footer_italic", False)
+    normalized.setdefault("footer_underline", False)
 
     background_asset = str(
         normalized.get("background_asset", "")
@@ -190,10 +205,25 @@ def _validate_template(template, manifest: dict) -> dict:
             normalized[field] = float(normalized[field])
             if not 0 <= normalized[field] <= 100:
                 raise ValueError(f"{field} is outside 0-100")
+        for field in ("title_font_size", "body_font_size", "footer_font_size"):
+            normalized[field] = int(normalized[field])
+            if not 16 <= normalized[field] <= 160:
+                raise ValueError(f"{field} is outside 16-160")
     except (TypeError, ValueError) as error:
         raise TemplatePackError(
             f"Template '{normalized['id']}' has invalid numeric fields."
         ) from error
+
+    for field in (
+        "title_bold", "title_italic", "title_underline",
+        "body_bold", "body_italic", "body_underline",
+        "footer_bold", "footer_italic", "footer_underline",
+    ):
+        value = normalized[field]
+        if not isinstance(value, bool):
+            normalized[field] = str(value).strip().lower() in {
+                "true", "1", "yes", "on"
+            }
 
     return normalized
 
@@ -356,23 +386,37 @@ def install_template_pack_zip(zip_path: Path):
             raise TemplatePackError("The template pack ZIP exceeds installation limits.")
 
         with tempfile.TemporaryDirectory(prefix="cpit-pack-") as temp:
-            root = Path(temp).resolve()
+            workspace = Path(temp).resolve()
+            extraction_root = workspace / "extracted"
+            validation_root = workspace / "validated"
+
+            extraction_root.mkdir()
+            validation_root.mkdir()
+
             for member in files:
                 relative = Path(member.filename)
                 if relative.is_absolute() or ".." in relative.parts:
                     raise TemplatePackError("The ZIP contains an unsafe file path.")
-                destination = (root / relative).resolve()
-                if root not in destination.parents:
+                destination = (extraction_root / relative).resolve()
+                if extraction_root not in destination.parents:
                     raise TemplatePackError("The ZIP contains an unsafe file path.")
-            archive.extractall(root)
 
-            roots = [p for p in root.iterdir() if p.name != "__MACOSX"]
-            source = roots[0] if len(roots) == 1 and roots[0].is_dir() else root
+            archive.extractall(extraction_root)
+
+            roots = [
+                p for p in extraction_root.iterdir()
+                if p.name != "__MACOSX"
+            ]
+            source = (
+                roots[0]
+                if len(roots) == 1 and roots[0].is_dir()
+                else extraction_root
+            )
 
             manifest_data = _read_json(source / "manifest.json")
             pack_id = _normalize_pack_id(manifest_data.get("id", ""))
-            staging = root / ".validated" / pack_id
-            staging.parent.mkdir(parents=True, exist_ok=True)
+
+            staging = validation_root / pack_id
             shutil.copytree(source, staging)
             manifest = _validate_manifest(_read_json(staging / "manifest.json"), staging)
 

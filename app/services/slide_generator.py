@@ -26,18 +26,30 @@ DEFAULT_ACCENT_COLOR = "#75B9E6"
 DEFAULT_OVERLAY_OPACITY = 35
 
 FONT_CANDIDATES = [
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
     Path("/usr/share/fonts/truetype/freefont/FreeSans.ttf"),
 ]
 
 BOLD_FONT_CANDIDATES = [
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
     Path(
         "/usr/share/fonts/truetype/liberation2/"
         "LiberationSans-Bold.ttf"
     ),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
     Path("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"),
+]
+
+ITALIC_FONT_CANDIDATES = [
+    Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Italic.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf"),
+    Path("/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf"),
+]
+
+BOLD_ITALIC_FONT_CANDIDATES = [
+    Path("/usr/share/fonts/truetype/liberation2/LiberationSans-BoldItalic.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf"),
+    Path("/usr/share/fonts/truetype/freefont/FreeSansBoldOblique.ttf"),
 ]
 
 
@@ -55,8 +67,20 @@ def _find_font(candidates: list[Path]) -> Path:
     )
 
 
-def _load_font(size: int, *, bold: bool = False) -> ImageFont.FreeTypeFont:
-    candidates = BOLD_FONT_CANDIDATES if bold else FONT_CANDIDATES
+def _load_font(
+    size: int,
+    *,
+    bold: bool = False,
+    italic: bool = False,
+) -> ImageFont.FreeTypeFont:
+    if bold and italic:
+        candidates = BOLD_ITALIC_FONT_CANDIDATES
+    elif bold:
+        candidates = BOLD_FONT_CANDIDATES
+    elif italic:
+        candidates = ITALIC_FONT_CANDIDATES
+    else:
+        candidates = FONT_CANDIDATES
     font_path = _find_font(candidates)
 
     try:
@@ -266,6 +290,18 @@ def create_sign_slide(
     body_y: float = 58.0,
     footer_x: float = 50.0,
     footer_y: float = 90.0,
+    title_font_size: int = 104,
+    title_bold: bool = True,
+    title_italic: bool = False,
+    title_underline: bool = False,
+    body_font_size: int = 60,
+    body_bold: bool = False,
+    body_italic: bool = False,
+    body_underline: bool = False,
+    footer_font_size: int = 38,
+    footer_bold: bool = False,
+    footer_italic: bool = False,
+    footer_underline: bool = False,
 ) -> Path:
     """
     Generate a 1920x1080 PNG sign and return its path.
@@ -342,14 +378,40 @@ def create_sign_slide(
 
     draw = ImageDraw.Draw(image)
 
-    title_font = _load_font(104, bold=True)
-    body_font = _load_font(60)
-    footer_font = _load_font(38)
+    def validated_font_size(value, label):
+        try:
+            size = int(value)
+        except (TypeError, ValueError) as error:
+            raise SlideGenerationError(
+                f"{label} font size must be an integer."
+            ) from error
+        if size < 16 or size > 160:
+            raise SlideGenerationError(
+                f"{label} font size must be between 16 and 160 pixels."
+            )
+        return size
 
-    left_margin = 170
-    right_margin = SLIDE_WIDTH - 170
-    content_width = right_margin - left_margin
-    center_x = SLIDE_WIDTH // 2
+    title_font_size = validated_font_size(title_font_size, "Title")
+    body_font_size = validated_font_size(body_font_size, "Message")
+    footer_font_size = validated_font_size(footer_font_size, "Footer")
+
+    title_font = _load_font(
+        title_font_size, bold=title_bold, italic=title_italic
+    )
+    body_font = _load_font(
+        body_font_size, bold=body_bold, italic=body_italic
+    )
+    footer_font = _load_font(
+        footer_font_size, bold=footer_bold, italic=footer_italic
+    )
+
+    # Studio preview text boxes are 84% of the 1920px canvas.
+    # Use the identical width here so Chromium and Pillow wrap at the
+    # same boundary regardless of the draggable X anchor.
+    text_box_width = int(round(SLIDE_WIDTH * 0.84))
+
+    def available_width(_x_percent):
+        return text_box_width
 
     # Accent bar across the top.
     draw.rectangle(
@@ -366,25 +428,29 @@ def create_sign_slide(
         draw,
         title,
         title_font,
-        content_width,
+        available_width(title_x),
     ) if title else []
 
     body_lines = _wrap_text_to_width(
         draw,
         body,
         body_font,
-        content_width,
+        available_width(body_x),
     ) if body else []
 
-    def draw_positioned_block(lines, *, font, x_percent, y_percent, line_spacing):
+    def draw_positioned_block(
+        lines, *, font, x_percent, y_percent, line_height_ratio, underline=False
+    ):
         if not lines:
             return None
+
         sizes = [_measure_text(draw, line, font) for line in lines]
-        heights = [max(height, font.size) for _, height in sizes]
-        block_height = sum(heights) + line_spacing * max(0, len(lines) - 1)
+        line_height = max(1, int(round(font.size * line_height_ratio)))
+        block_height = line_height * len(lines)
         anchor_x = int(SLIDE_WIDTH * (float(x_percent) / 100.0))
-        start_y = int(SLIDE_HEIGHT * (float(y_percent) / 100.0) - block_height / 2)
-        start_y = max(30, min(SLIDE_HEIGHT - block_height - 30, start_y))
+        start_y = int(round(
+            SLIDE_HEIGHT * (float(y_percent) / 100.0) - block_height / 2
+        ))
         current_y = start_y
         min_x, max_x = SLIDE_WIDTH, 0
 
@@ -396,21 +462,30 @@ def create_sign_slide(
                 x_position = anchor_x - width
             else:
                 x_position = anchor_x - width // 2
-            x_position = max(30, min(SLIDE_WIDTH - width - 30, x_position))
+
+            # Do not clamp X/Y. Chromium clips the 84% text box at the
+            # preview edge, so Pillow must allow the same off-canvas layout.
             draw.text((x_position, current_y), line, font=font, fill=text_color)
+            if underline and line:
+                underline_y = current_y + font.size + max(2, font.size // 18)
+                thickness = max(2, font.size // 22)
+                draw.rectangle(
+                    (x_position, underline_y, x_position + width, underline_y + thickness),
+                    fill=text_color,
+                )
             min_x = min(min_x, x_position)
             max_x = max(max_x, x_position + width)
-            current_y += heights[index] + line_spacing
+            current_y += line_height
 
-        return min_x, start_y, max_x, current_y
+        return min_x, start_y, max_x, start_y + block_height
 
     title_box = draw_positioned_block(
         title_lines, font=title_font, x_percent=title_x,
-        y_percent=title_y, line_spacing=22,
+        y_percent=title_y, line_height_ratio=1.08, underline=title_underline,
     )
     body_box = draw_positioned_block(
         body_lines, font=body_font, x_percent=body_x,
-        y_percent=body_y, line_spacing=22,
+        y_percent=body_y, line_height_ratio=1.35, underline=body_underline,
     )
 
     if show_divider and title_box and body_box:
@@ -427,10 +502,12 @@ def create_sign_slide(
         )
 
     if footer:
-        footer_lines = _wrap_text_to_width(draw, footer, footer_font, content_width)
+        footer_lines = _wrap_text_to_width(
+            draw, footer, footer_font, available_width(footer_x)
+        )
         draw_positioned_block(
             footer_lines, font=footer_font, x_percent=footer_x,
-            y_percent=footer_y, line_spacing=8,
+            y_percent=footer_y, line_height_ratio=1.30, underline=footer_underline,
         )
 
     try:
