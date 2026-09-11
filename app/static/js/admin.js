@@ -1370,7 +1370,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Boolean(values.backgroundImageUrl);
 
         signPreview.style.backgroundColor = values.backgroundColor;
-        signPreview.style.color = values.textColor;
+        previewContent.style.color = values.textColor;
 
         if (previewBackgroundImage && previewOverlay) {
             previewBackgroundImage.style.display = useImage
